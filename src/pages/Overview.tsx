@@ -12,11 +12,55 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import { useFilters } from '../hooks/useFilters';
+import { 
+  getOverviewMetrics, 
+  getRecentOrders, 
+  getProductRankings, 
+  getPlatformBreakdown 
+} from '../services/analyticsService';
 
 export const Overview: React.FC = () => {
   const { platform, preset, startDate, endDate } = useFilters();
 
-  // Print current filters for visual confirmation in this skeleton phase
+  // Retrieve calculated metrics from the analytics service
+  const kpis = getOverviewMetrics(platform, preset, startDate, endDate);
+  const recentOrders = getRecentOrders(platform, preset, 3, startDate, endDate);
+  const topProducts = getProductRankings(platform, preset, 3, startDate, endDate);
+  const platformShares = getPlatformBreakdown(preset, startDate, endDate);
+
+  // Formatting helpers
+  const formatINR = (num: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(num);
+  };
+
+  const formatPercentage = (num: number) => {
+    const sign = num > 0 ? '+' : '';
+    return `${sign}${num.toFixed(1)}%`;
+  };
+
+  const getGrowthBadge = (growth: number) => {
+    if (growth > 0) {
+      return (
+        <Badge variant="success" className="flex items-center gap-1">
+          <ArrowUpRight size={10} />
+          {formatPercentage(growth)}
+        </Badge>
+      );
+    } else if (growth < 0) {
+      return (
+        <Badge variant="danger" className="flex items-center gap-1">
+          <ArrowDownRight size={10} />
+          {formatPercentage(growth)}
+        </Badge>
+      );
+    }
+    return <Badge variant="neutral">{formatPercentage(growth)}</Badge>;
+  };
+
   const getFilterSummary = () => {
     let summary = `Platform: ${platform.toUpperCase()} | Range: ${preset.toUpperCase()}`;
     if (preset === 'custom' && startDate && endDate) {
@@ -25,12 +69,20 @@ export const Overview: React.FC = () => {
     return summary;
   };
 
+  // Find platform specific breakdown data
+  const amazonShareData = platformShares.find(p => p.platform === 'amazon') || { revenue: 0, orders: 0 };
+  const flipkartShareData = platformShares.find(p => p.platform === 'flipkart') || { revenue: 0, orders: 0 };
+  const totalSharesRevenue = amazonShareData.revenue + flipkartShareData.revenue;
+  
+  const amazonPercentage = totalSharesRevenue > 0 ? (amazonShareData.revenue / totalSharesRevenue) * 100 : 0;
+  const flipkartPercentage = totalSharesRevenue > 0 ? (flipkartShareData.revenue / totalSharesRevenue) * 100 : 0;
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Page Title & Status actions */}
+      {/* Page Title & Status panel */}
       <PageHeader 
         title="Overview" 
-        subtitle="Unified view of your ecommerce platforms performance."
+        subtitle="Unified metrics driven from deterministic seller datasets."
         actions={
           <div className="flex items-center gap-2">
             <span className="text-xs" style={{ backgroundColor: 'var(--bg-surface)', padding: '6px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
@@ -53,11 +105,10 @@ export const Overview: React.FC = () => {
           </CardHeader>
           <CardBody>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
-              <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>₹4,52,890.00</span>
-              <Badge variant="success" className="flex items-center gap-1">
-                <ArrowUpRight size={10} />
-                +12.4%
-              </Badge>
+              <span style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                {formatINR(kpis.totalRevenue)}
+              </span>
+              {getGrowthBadge(kpis.revenueGrowth)}
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period</p>
           </CardBody>
@@ -71,11 +122,10 @@ export const Overview: React.FC = () => {
           </CardHeader>
           <CardBody>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
-              <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>1,842</span>
-              <Badge variant="success" className="flex items-center gap-1">
-                <ArrowUpRight size={10} />
-                +8.2%
-              </Badge>
+              <span style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                {kpis.totalOrders.toLocaleString('en-IN')}
+              </span>
+              {getGrowthBadge(kpis.ordersGrowth)}
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period</p>
           </CardBody>
@@ -89,11 +139,10 @@ export const Overview: React.FC = () => {
           </CardHeader>
           <CardBody>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
-              <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>₹245.86</span>
-              <Badge variant="danger" className="flex items-center gap-1">
-                <ArrowDownRight size={10} />
-                -1.5%
-              </Badge>
+              <span style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                {formatINR(kpis.avgOrderValue)}
+              </span>
+              {getGrowthBadge(kpis.aovGrowth)}
             </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period</p>
           </CardBody>
@@ -107,12 +156,18 @@ export const Overview: React.FC = () => {
           </CardHeader>
           <CardBody>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
-              <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-primary)' }}>₹98,400.00</span>
-              <Badge variant="success" className="flex items-center gap-1">
-                21.7% margin
+              <span style={{ 
+                fontSize: '22px', 
+                fontWeight: '700', 
+                color: kpis.netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' 
+              }}>
+                {formatINR(kpis.netProfit)}
+              </span>
+              <Badge variant={kpis.netProfit >= 0 ? 'success' : 'danger'}>
+                {kpis.totalRevenue > 0 ? `${((kpis.netProfit / kpis.totalRevenue) * 100).toFixed(1)}% margin` : '0% margin'}
               </Badge>
             </div>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Net profit margin this period</p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period ({formatPercentage(kpis.profitGrowth)})</p>
           </CardBody>
         </Card>
       </div>
@@ -128,7 +183,7 @@ export const Overview: React.FC = () => {
           <CardBody>
             <div 
               style={{ 
-                height: '300px', 
+                height: '240px', 
                 border: '1px dashed var(--border-color)', 
                 borderRadius: 'var(--radius-md)',
                 backgroundColor: 'rgba(31, 41, 55, 0.1)',
@@ -159,14 +214,16 @@ export const Overview: React.FC = () => {
             <div className="flex flex-col gap-1">
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium">Amazon</span>
-                <span className="font-semibold" style={{ color: 'var(--color-amazon)' }}>60%</span>
+                <span className="font-semibold" style={{ color: 'var(--color-amazon)' }}>
+                  {amazonPercentage.toFixed(0)}%
+                </span>
               </div>
               <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '60%', backgroundColor: 'var(--color-amazon)' }} />
+                <div style={{ height: '100%', width: `${amazonPercentage}%`, backgroundColor: 'var(--color-amazon)' }} />
               </div>
               <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
-                <span>₹2,71,734.00</span>
-                <span>1,105 Orders</span>
+                <span>{formatINR(amazonShareData.revenue)}</span>
+                <span>{amazonShareData.orders} Orders</span>
               </div>
             </div>
 
@@ -174,14 +231,16 @@ export const Overview: React.FC = () => {
             <div className="flex flex-col gap-1">
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium">Flipkart</span>
-                <span className="font-semibold" style={{ color: 'var(--color-flipkart)' }}>40%</span>
+                <span className="font-semibold" style={{ color: 'var(--color-flipkart)' }}>
+                  {flipkartPercentage.toFixed(0)}%
+                </span>
               </div>
               <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '40%', backgroundColor: 'var(--color-flipkart)' }} />
+                <div style={{ height: '100%', width: `${flipkartPercentage}%`, backgroundColor: 'var(--color-flipkart)' }} />
               </div>
               <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
-                <span>₹1,81,156.00</span>
-                <span>737 Orders</span>
+                <span>{formatINR(flipkartShareData.revenue)}</span>
+                <span>{flipkartShareData.orders} Orders</span>
               </div>
             </div>
           </CardBody>
@@ -198,47 +257,39 @@ export const Overview: React.FC = () => {
           </CardHeader>
           <CardBody>
             <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Product details</th>
-                    <th style={{ textAlign: 'right' }}>Units sold</th>
-                    <th style={{ textAlign: 'right' }}>Revenue</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">Wireless Noise-Cancelling Headphones</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>SKU: WH-1000XM4</span>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>245</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>₹4,90,000.00</td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">Ergonomic Office Chair</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>SKU: CH-ERGO-01</span>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>182</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>₹3,27,600.00</td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">Smart Fitness Band Pro</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>SKU: SM-FIT-BAND</span>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>156</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>₹2,34,000.00</td>
-                  </tr>
-                </tbody>
-              </table>
+              {topProducts.length === 0 ? (
+                <div className="flex items-center justify-center" style={{ height: '180px', color: 'var(--text-muted)' }}>
+                  No product data for this period
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Product details</th>
+                      <th style={{ textAlign: 'right' }}>Units sold</th>
+                      <th style={{ textAlign: 'right' }}>Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topProducts.map(p => (
+                      <tr key={p.id}>
+                        <td>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm" style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {p.name}
+                            </span>
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>SKU: {p.sku}</span>
+                          </div>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 500 }}>{p.unitsSold}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--color-success)' }}>
+                          {formatINR(p.revenue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </CardBody>
         </Card>
@@ -251,63 +302,51 @@ export const Overview: React.FC = () => {
           </CardHeader>
           <CardBody>
             <div className="table-container">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Order ID</th>
-                    <th>Platform</th>
-                    <th style={{ textAlign: 'right' }}>Amount</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">OD9830217983</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>2026-08-10</span>
-                      </div>
-                    </td>
-                    <td>
-                      <Badge variant="amazon">Amazon</Badge>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>₹2,499.00</td>
-                    <td>
-                      <Badge variant="success">Delivered</Badge>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">OD4829018742</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>2026-08-10</span>
-                      </div>
-                    </td>
-                    <td>
-                      <Badge variant="flipkart">Flipkart</Badge>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>₹899.00</td>
-                    <td>
-                      <Badge variant="warning">Pending</Badge>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">OD7891230491</span>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>2026-08-09</span>
-                      </div>
-                    </td>
-                    <td>
-                      <Badge variant="amazon">Amazon</Badge>
-                    </td>
-                    <td style={{ textAlign: 'right', fontWeight: 500 }}>₹12,450.00</td>
-                    <td>
-                      <Badge variant="danger">Returned</Badge>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              {recentOrders.length === 0 ? (
+                <div className="flex items-center justify-center" style={{ height: '180px', color: 'var(--text-muted)' }}>
+                  No orders for this period
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Order ID</th>
+                      <th>Platform</th>
+                      <th style={{ textAlign: 'right' }}>Amount</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentOrders.map(o => (
+                      <tr key={o.id}>
+                        <td>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{o.id}</span>
+                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{o.orderDate}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <Badge variant={o.platform === 'amazon' ? 'amazon' : 'flipkart'}>
+                            {o.platform}
+                          </Badge>
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 500 }}>{formatINR(o.orderValue)}</td>
+                        <td>
+                          <Badge 
+                            variant={
+                              o.status === 'delivered' ? 'success' :
+                              o.status === 'shipped' ? 'info' :
+                              o.status === 'pending' ? 'warning' : 'danger'
+                            }
+                          >
+                            {o.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </CardBody>
         </Card>
