@@ -244,6 +244,7 @@ export function getOverviewMetrics(
     unitsGrowth: calculateGrowth(current.unitsSold, previous.unitsSold),
     netProfit: current.netProfit,
     profitGrowth: calculateGrowth(current.netProfit, previous.netProfit),
+    profitMargin: current.profitMargin,
     avgOrderValue: current.aov,
     aovGrowth: calculateGrowth(current.aov, previous.aov),
     returnsCount: current.returnedOrderCount,

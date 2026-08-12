@@ -22,6 +22,7 @@ export interface OverviewMetrics {
   returnsCount: number;
   returnRate: number;
   returnRateGrowth: number;
+  profitMargin: number;
 }
 
 export interface DailySalesMetric {

@@ -16,8 +16,18 @@ import {
   getOverviewMetrics, 
   getRecentOrders, 
   getProductRankings, 
-  getPlatformBreakdown 
+  getPlatformBreakdown,
+  getSalesTimeline
 } from '../services/analyticsService';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip
+} from 'recharts';
 
 export const Overview: React.FC = () => {
   const { platform, preset, startDate, endDate } = useFilters();
@@ -27,6 +37,7 @@ export const Overview: React.FC = () => {
   const recentOrders = getRecentOrders(platform, preset, 3, startDate, endDate);
   const topProducts = getProductRankings(platform, preset, 3, startDate, endDate);
   const platformShares = getPlatformBreakdown(preset, startDate, endDate);
+  const timelineData = getSalesTimeline(platform, preset, startDate, endDate);
 
   // Formatting helpers
   const formatINR = (num: number) => {
@@ -37,28 +48,35 @@ export const Overview: React.FC = () => {
     }).format(num);
   };
 
-  const formatPercentage = (num: number) => {
-    const sign = num > 0 ? '+' : '';
-    return `${sign}${num.toFixed(1)}%`;
-  };
+  const getGrowthIndicator = (growth: number) => {
+    const absLabel = `${Math.abs(growth).toFixed(1)}%`;
 
-  const getGrowthBadge = (growth: number) => {
     if (growth > 0) {
       return (
-        <Badge variant="success" className="flex items-center gap-1">
-          <ArrowUpRight size={10} />
-          {formatPercentage(growth)}
-        </Badge>
-      );
-    } else if (growth < 0) {
-      return (
-        <Badge variant="danger" className="flex items-center gap-1">
-          <ArrowDownRight size={10} />
-          {formatPercentage(growth)}
-        </Badge>
+        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-success)', fontWeight: 500 }}>
+          <ArrowUpRight size={14} />
+          <span>{absLabel}</span>
+          <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>vs previous period</span>
+        </div>
       );
     }
-    return <Badge variant="neutral">{formatPercentage(growth)}</Badge>;
+
+    if (growth < 0) {
+      return (
+        <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-danger)', fontWeight: 500 }}>
+          <ArrowDownRight size={14} />
+          <span>{absLabel}</span>
+          <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>vs previous period</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+        <span>{absLabel}</span>
+        <span style={{ fontWeight: 400 }}>vs previous period</span>
+      </div>
+    );
   };
 
   const getFilterSummary = () => {
@@ -70,10 +88,19 @@ export const Overview: React.FC = () => {
   };
 
   // Find platform specific breakdown data
-  const amazonShareData = platformShares.find(p => p.platform === 'amazon') || { revenue: 0, orders: 0 };
-  const flipkartShareData = platformShares.find(p => p.platform === 'flipkart') || { revenue: 0, orders: 0 };
+  const emptyPlatform = {
+    revenue: 0,
+    orders: 0,
+    unitsSold: 0,
+    fees: 0,
+    returns: 0,
+    profit: 0,
+    margin: 0
+  };
+  const amazonShareData = platformShares.find(p => p.platform === 'amazon') || emptyPlatform;
+  const flipkartShareData = platformShares.find(p => p.platform === 'flipkart') || emptyPlatform;
   const totalSharesRevenue = amazonShareData.revenue + flipkartShareData.revenue;
-  
+
   const amazonPercentage = totalSharesRevenue > 0 ? (amazonShareData.revenue / totalSharesRevenue) * 100 : 0;
   const flipkartPercentage = totalSharesRevenue > 0 ? (flipkartShareData.revenue / totalSharesRevenue) * 100 : 0;
 
@@ -104,13 +131,12 @@ export const Overview: React.FC = () => {
             <IndianRupee size={16} style={{ color: 'var(--text-muted)' }} />
           </CardHeader>
           <CardBody>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '4px 0' }}>
               <span style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)' }}>
                 {formatINR(kpis.totalRevenue)}
               </span>
-              {getGrowthBadge(kpis.revenueGrowth)}
+              {getGrowthIndicator(kpis.revenueGrowth)}
             </div>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period</p>
           </CardBody>
         </Card>
 
@@ -121,13 +147,12 @@ export const Overview: React.FC = () => {
             <ShoppingBag size={16} style={{ color: 'var(--text-muted)' }} />
           </CardHeader>
           <CardBody>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '4px 0' }}>
               <span style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)' }}>
                 {kpis.totalOrders.toLocaleString('en-IN')}
               </span>
-              {getGrowthBadge(kpis.ordersGrowth)}
+              {getGrowthIndicator(kpis.ordersGrowth)}
             </div>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period</p>
           </CardBody>
         </Card>
 
@@ -138,111 +163,271 @@ export const Overview: React.FC = () => {
             <TrendingUp size={16} style={{ color: 'var(--text-muted)' }} />
           </CardHeader>
           <CardBody>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '4px 0' }}>
               <span style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)' }}>
                 {formatINR(kpis.avgOrderValue)}
               </span>
-              {getGrowthBadge(kpis.aovGrowth)}
+              {getGrowthIndicator(kpis.aovGrowth)}
             </div>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period</p>
           </CardBody>
         </Card>
 
-        {/* Net Profit Margin Card */}
+        {/* Net Profit Card */}
         <Card hoverable>
           <CardHeader>
             <CardTitle>Net Profit</CardTitle>
             <Percent size={16} style={{ color: 'var(--text-muted)' }} />
           </CardHeader>
           <CardBody>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', margin: '4px 0' }}>
-              <span style={{ 
-                fontSize: '22px', 
-                fontWeight: '700', 
-                color: kpis.netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '4px 0' }}>
+              <span style={{
+                fontSize: '22px',
+                fontWeight: '700',
+                color: kpis.netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)'
               }}>
                 {formatINR(kpis.netProfit)}
               </span>
-              <Badge variant={kpis.netProfit >= 0 ? 'success' : 'danger'}>
-                {kpis.totalRevenue > 0 ? `${((kpis.netProfit / kpis.totalRevenue) * 100).toFixed(1)}% margin` : '0% margin'}
-              </Badge>
+              {getGrowthIndicator(kpis.profitGrowth)}
+              <span
+                className="text-xs"
+                style={{
+                  color: kpis.profitMargin >= 0 ? 'var(--text-secondary)' : 'var(--color-danger)',
+                  fontWeight: 500
+                }}
+              >
+                {kpis.profitMargin.toFixed(1)}% margin
+              </span>
             </div>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>vs. previous period ({formatPercentage(kpis.profitGrowth)})</p>
           </CardBody>
         </Card>
       </div>
 
       {/* Main Charts area */}
       <div className="dashboard-row-grid">
-        {/* Sales trends placeholder */}
+        {/* Sales Trend Chart – Phase 3A */}
         <Card>
           <CardHeader>
-            <CardTitle>Sales & Revenue Trends</CardTitle>
+            <CardTitle>Sales &amp; Revenue Trends</CardTitle>
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Daily aggregation</span>
           </CardHeader>
           <CardBody>
-            <div 
-              style={{ 
-                height: '240px', 
-                border: '1px dashed var(--border-color)', 
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'rgba(31, 41, 55, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column',
-                gap: '8px'
-              }}
-            >
-              <TrendingUp size={32} style={{ color: 'var(--text-muted)' }} />
-              <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>Sales Trend Chart Placeholder</span>
-              <p className="text-xs text-center" style={{ color: 'var(--text-muted)', maxWidth: '280px' }}>
-                Recharts interactive visualization will be integrated here during Phase 3.
-              </p>
-            </div>
+            {timelineData.length === 0 ? (
+              <div
+                style={{
+                  height: '240px',
+                  border: '1px dashed var(--border-color)',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: 'rgba(31, 41, 55, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}
+              >
+                <TrendingUp size={32} style={{ color: 'var(--text-muted)' }} />
+                <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>No sales data for this period</span>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={timelineData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    tickLine={false}
+                    axisLine={{ stroke: 'var(--border-color)' }}
+                    tickFormatter={(value: string) => {
+                      const d = new Date(value);
+                      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={64}
+                    tickFormatter={(value: number) =>
+                      new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR',
+                        maximumFractionDigits: 0,
+                        notation: 'compact'
+                      }).format(value)
+                    }
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '12px'
+                    }}
+                    labelFormatter={(label) => {
+                      const d = new Date(String(label));
+                      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+                    }}
+                    formatter={(value) => [
+                      new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR',
+                        maximumFractionDigits: 0
+                      }).format(Number(value)),
+                      'Net Sales'
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="netSales"
+                    name="Net Sales"
+                    stroke="var(--color-primary)"
+                    fill="var(--color-primary)"
+                    fillOpacity={0.12}
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </CardBody>
         </Card>
 
-        {/* Platform Comparison details panel */}
+        {/* Platform Performance comparison */}
         <Card>
           <CardHeader>
-            <CardTitle>Platform Share</CardTitle>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Revenue Split</span>
+            <CardTitle>Platform Performance</CardTitle>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Amazon vs Flipkart</span>
           </CardHeader>
-          <CardBody className="flex flex-col gap-6">
-            {/* Amazon Progress bar */}
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-medium">Amazon</span>
-                <span className="font-semibold" style={{ color: 'var(--color-amazon)' }}>
-                  {amazonPercentage.toFixed(0)}%
-                </span>
+          <CardBody>
+            {totalSharesRevenue === 0 ? (
+              <div
+                className="flex items-center justify-center"
+                style={{ height: '180px', color: 'var(--text-muted)' }}
+              >
+                No platform data for this period
               </div>
-              <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${amazonPercentage}%`, backgroundColor: 'var(--color-amazon)' }} />
-              </div>
-              <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
-                <span>{formatINR(amazonShareData.revenue)}</span>
-                <span>{amazonShareData.orders} Orders</span>
-              </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {/* Amazon */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-medium">Amazon</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-amazon)' }}>
+                      {amazonPercentage.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${amazonPercentage}%`, backgroundColor: 'var(--color-amazon)' }} />
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '6px 12px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Revenue</span>
+                      <span className="font-medium">{formatINR(amazonShareData.revenue)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Orders</span>
+                      <span className="font-medium">{amazonShareData.orders.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Units Sold</span>
+                      <span className="font-medium">{amazonShareData.unitsSold.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Marketplace Fees</span>
+                      <span className="font-medium">{formatINR(amazonShareData.fees)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Returns</span>
+                      <span className="font-medium">{amazonShareData.returns.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Net Profit</span>
+                      <span
+                        className="font-medium"
+                        style={{ color: amazonShareData.profit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
+                      >
+                        {formatINR(amazonShareData.profit)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2" style={{ gridColumn: '1 / -1' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Profit Margin</span>
+                      <span
+                        className="font-medium"
+                        style={{ color: amazonShareData.margin >= 0 ? 'var(--text-primary)' : 'var(--color-danger)' }}
+                      >
+                        {amazonShareData.margin.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Flipkart Progress bar */}
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-center text-sm">
-                <span className="font-medium">Flipkart</span>
-                <span className="font-semibold" style={{ color: 'var(--color-flipkart)' }}>
-                  {flipkartPercentage.toFixed(0)}%
-                </span>
+                {/* Flipkart */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-medium">Flipkart</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-flipkart)' }}>
+                      {flipkartPercentage.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${flipkartPercentage}%`, backgroundColor: 'var(--color-flipkart)' }} />
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '6px 12px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Revenue</span>
+                      <span className="font-medium">{formatINR(flipkartShareData.revenue)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Orders</span>
+                      <span className="font-medium">{flipkartShareData.orders.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Units Sold</span>
+                      <span className="font-medium">{flipkartShareData.unitsSold.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Marketplace Fees</span>
+                      <span className="font-medium">{formatINR(flipkartShareData.fees)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Returns</span>
+                      <span className="font-medium">{flipkartShareData.returns.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span style={{ color: 'var(--text-secondary)' }}>Net Profit</span>
+                      <span
+                        className="font-medium"
+                        style={{ color: flipkartShareData.profit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
+                      >
+                        {formatINR(flipkartShareData.profit)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-2" style={{ gridColumn: '1 / -1' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Profit Margin</span>
+                      <span
+                        className="font-medium"
+                        style={{ color: flipkartShareData.margin >= 0 ? 'var(--text-primary)' : 'var(--color-danger)' }}
+                      >
+                        {flipkartShareData.margin.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${flipkartPercentage}%`, backgroundColor: 'var(--color-flipkart)' }} />
-              </div>
-              <div className="flex justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
-                <span>{formatINR(flipkartShareData.revenue)}</span>
-                <span>{flipkartShareData.orders} Orders</span>
-              </div>
-            </div>
+            )}
           </CardBody>
         </Card>
       </div>
