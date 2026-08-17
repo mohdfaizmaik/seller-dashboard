@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/common/Layout';
 import { Overview } from './pages/Overview';
+import { MarketplacePerformance } from './pages/MarketplacePerformance';
 import { PageHeader } from './components/common/PageHeader';
 import { Card, CardBody } from './components/ui/Card';
 
@@ -86,6 +87,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Overview />} />
+          <Route path="marketplace" element={<MarketplacePerformance />} />
           <Route path="sales" element={<SalesPlaceholder />} />
           <Route path="products" element={<ProductsPlaceholder />} />
           <Route path="orders" element={<OrdersPlaceholder />} />

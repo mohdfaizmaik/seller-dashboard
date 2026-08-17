@@ -7,6 +7,7 @@ import {
   ShoppingCart, 
   DollarSign, 
   Activity,
+  Store,
   X 
 } from 'lucide-react';
 
@@ -18,6 +19,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const menuItems = [
     { path: '/', label: 'Overview', icon: LayoutDashboard },
+    { path: '/marketplace', label: 'Marketplace', icon: Store },
     { path: '/sales', label: 'Sales Analytics', icon: TrendingUp },
     { path: '/products', label: 'Product Performance', icon: Package },
     { path: '/orders', label: 'Order Management', icon: ShoppingCart },
