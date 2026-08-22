@@ -56,20 +56,20 @@ export interface AmazonRawDailyReport {
   Date: string; // DD/MM/YY or DD/MM/YYYY
   'Ordered Product Sales': string | number;
   'Ordered Product Sales - B2B': string | number;
-  'Units Ordered': number;
-  'Units Ordered - B2B': number;
-  'Total Order Items': number;
-  'Total Order Items - B2B': number;
-  'Page Views - Total': number;
-  'Page Views - Total - B2B': number;
-  'Sessions - Total': number;
-  'Sessions - Total - B2B': number;
+  'Units Ordered': number | string;
+  'Units Ordered - B2B': number | string;
+  'Total Order Items': number | string;
+  'Total Order Items - B2B': number | string;
+  'Page Views - Total': number | string;
+  'Page Views - Total - B2B': number | string;
+  'Sessions - Total': number | string;
+  'Sessions - Total - B2B': number | string;
   'Featured Offer Percentage': string | number;
   'Featured Offer Percentage - B2B': string | number;
   'Unit Session Percentage': string | number;
   'Unit Session Percentage - B2B': string | number;
-  'Average Offer Count': number;
-  'Average Parent Items': number;
+  'Average Offer Count': number | string;
+  'Average Parent Items': number | string;
 }
 
 /**

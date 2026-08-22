@@ -1,13 +1,16 @@
 /**
- * Future API adapter boundary (Phase 4E documentation stub).
+ * Future API adapter boundary (Phase 4E / 5A).
  *
  * Intended progression:
- *   MarketplaceAdapter
+ *   MarketplaceAdapter (frontend contract)
  *     → LocalReportMarketplaceAdapter  (current Amazon / Flipkart reports)
- *     → FutureApiMarketplaceAdapter    (later — server-side only)
+ *     → FutureApiMarketplaceAdapter    (later — calls server, never SP-API from browser)
+ *
+ * Server foundation (Phase 5A) lives under `/server`:
+ *   HTTP routes → server marketplace clients → (future) normalization
  *
  * When implementing FutureApiMarketplaceAdapter:
- * - Call a backend / API integration layer — never marketplace APIs from the browser
+ * - Call this app's backend only — never marketplace APIs from the browser
  * - Keep credentials, OAuth tokens, and secrets off the client
  * - Still return MarketplaceDailyMetric[] into the existing dashboard
  * - Do not feed business-report sales into calculateFinancialSummary / profit

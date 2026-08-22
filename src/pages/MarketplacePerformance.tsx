@@ -14,6 +14,7 @@ import {
 import { useFilters } from '../hooks/useFilters';
 import {
   getMarketplaceDailyMetrics,
+  getMarketplacePerformanceData,
   resolveMarketplaceDateRange
 } from '../services/marketplaceReportService';
 import { MARKETPLACE_ORDER_ITEMS_LABEL } from '../data/marketplace/marketplacePerformanceLabels';
@@ -175,7 +176,48 @@ export const MarketplacePerformance: React.FC = () => {
     startDate,
     endDate
   );
-  const metrics = getMarketplaceDailyMetrics(platform, rangeStart, rangeEnd);
+
+  // Phase 5D: Local data computed synchronously for immediate rendering.
+  const localMetrics = getMarketplaceDailyMetrics(platform, rangeStart, rangeEnd);
+
+  // Async backend-enhanced state (Amazon backend → preferred, local → fallback).
+  const [enhancedData, setEnhancedData] = React.useState<{
+    metrics: MarketplaceDailyMetric[];
+    amazonSource: 'backend' | 'local';
+  } | null>(null);
+  const [backendLoading, setBackendLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setEnhancedData(null);
+
+    const needsBackend = platform === 'all' || platform === 'amazon';
+    if (!needsBackend) {
+      setBackendLoading(false);
+      return;
+    }
+
+    setBackendLoading(true);
+
+    getMarketplacePerformanceData(platform, rangeStart, rangeEnd)
+      .then((result) => {
+        if (!cancelled) {
+          setEnhancedData(result);
+          setBackendLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setBackendLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [platform, rangeStart, rangeEnd]);
+
+  // Use backend-enhanced data when available, otherwise local
+  const metrics = enhancedData?.metrics ?? localMetrics;
+  const amazonSource = enhancedData?.amazonSource ?? 'local';
 
   const amazonRows = metrics.filter((m) => m.platform === 'amazon');
   const flipkartRows = metrics.filter((m) => m.platform === 'flipkart');
@@ -217,6 +259,39 @@ export const MarketplacePerformance: React.FC = () => {
     let summary = `Platform: ${platform.toUpperCase()} | Range: ${preset.toUpperCase()}`;
     summary += ` (${rangeStart} to ${rangeEnd})`;
     return summary;
+  };
+
+  /** Subtle data source status (Phase 5D). */
+  const renderSourceIndicator = () => {
+    if (!showAmazon) return null;
+    if (backendLoading) {
+      return (
+        <span
+          className="text-xs"
+          style={{
+            padding: '4px 10px',
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--text-muted)',
+            opacity: 0.85
+          }}
+        >
+          Amazon: Connecting…
+        </span>
+      );
+    }
+    return (
+      <span
+        className="text-xs"
+        style={{
+          padding: '4px 10px',
+          borderRadius: 'var(--radius-md)',
+          color: amazonSource === 'backend' ? '#4ade80' : 'var(--text-muted)',
+          opacity: 0.85
+        }}
+      >
+        {amazonSource === 'backend' ? '● Amazon: Live' : '● Amazon: Local data'}
+      </span>
+    );
   };
 
   const renderPlatformBlock = (rows: MarketplaceDailyMetric[], plat: MarketplacePlatform) => {
@@ -279,18 +354,21 @@ export const MarketplacePerformance: React.FC = () => {
           title="Marketplace Performance"
           subtitle="Amazon & Flipkart marketplace performance"
           actions={
-            <span
-              className="text-xs"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                padding: '6px 12px',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-secondary)'
-              }}
-            >
-              {filterSummary()}
-            </span>
+            <>
+              <span
+                className="text-xs"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  padding: '6px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)'
+                }}
+              >
+                {filterSummary()}
+              </span>
+              {renderSourceIndicator()}
+            </>
           }
         />
         <Card>
@@ -311,18 +389,21 @@ export const MarketplacePerformance: React.FC = () => {
         title="Marketplace Performance"
         subtitle="Amazon & Flipkart marketplace performance"
         actions={
-          <span
-            className="text-xs"
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-secondary)'
-            }}
-          >
-            {filterSummary()}
-          </span>
+          <>
+            <span
+              className="text-xs"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                padding: '6px 12px',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)'
+              }}
+            >
+              {filterSummary()}
+            </span>
+            {renderSourceIndicator()}
+          </>
         }
       />
 

@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "tsx server/index.ts",
+    "dev:server": "tsx server/index.ts",
+    "test:server:amazon": "tsx server/validation/amazonPhase5bValidation.ts",
+    "test:server:amazon:reports": "tsx server/validation/amazonPhase5cValidation.ts",
+    "test:server:amazon:all": "npm run test:server:amazon && npm run test:server:amazon:reports",
+    "test:phase5d": "tsx server/validation/phase5dFrontendValidation.ts"
   },
   "dependencies": {
     "lucide-react": "^1.31.0",
@@ -23,6 +29,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",
+    "tsx": "^4.20.5",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
   }

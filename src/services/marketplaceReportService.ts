@@ -29,6 +29,7 @@ import { isLocalReportMarketplaceAdapter } from '../integrations/marketplaces/ty
 import type { MarketplaceDailyMetric, MarketplacePlatform } from '../models/marketplaceReport';
 import type { PlatformFilter, DatePresetFilter } from '../hooks/useFilters';
 import { getDateRangeFromPreset } from './analyticsService';
+import { getAmazonPerformance } from './marketplaceApiService';
 
 /**
  * Builds the full normalized corpus from active local-report adapters (once).
@@ -122,6 +123,59 @@ export function getMarketplaceNormalizationDemo(): {
     flipkartSample,
     platforms: ['amazon', 'flipkart']
   };
+}
+
+/**
+ * Phase 5D — async backend-enabled data fetcher for MarketplacePerformance.
+ *
+ * Source strategy:
+ *   Amazon  → backend (preferred) → local adapter (fallback)
+ *   Flipkart → local adapter only
+ *   Meesho  → not implemented
+ *
+ * Does NOT replace getMarketplaceDailyMetrics which remains the synchronous
+ * local-only function used by validation, Overview, and other consumers.
+ *
+ * Never returns duplicate Amazon data (backend + local).
+ */
+export async function getMarketplacePerformanceData(
+  platform: PlatformFilter,
+  startDate: string,
+  endDate: string
+): Promise<{
+  metrics: MarketplaceDailyMetric[];
+  amazonSource: 'backend' | 'local';
+}> {
+  const wantAmazon = platform === 'all' || platform === 'amazon';
+  const wantFlipkart = platform === 'all' || platform === 'flipkart';
+
+  let amazonMetrics: MarketplaceDailyMetric[] = [];
+  let amazonSource: 'backend' | 'local' = 'local';
+
+  if (wantAmazon) {
+    const result = await getAmazonPerformance(startDate, endDate);
+    if (result.ok) {
+      // Backend succeeded (may be empty []) — use backend data exclusively
+      amazonMetrics = result.data;
+      amazonSource = 'backend';
+    } else {
+      // Backend failed — fall back to existing local adapter
+      amazonMetrics = getMarketplaceDailyMetrics('amazon', startDate, endDate);
+      amazonSource = 'local';
+    }
+  }
+
+  // Flipkart: always local adapter
+  let flipkartMetrics: MarketplaceDailyMetric[] = [];
+  if (wantFlipkart) {
+    flipkartMetrics = getMarketplaceDailyMetrics('flipkart', startDate, endDate);
+  }
+
+  const metrics = [...amazonMetrics, ...flipkartMetrics].sort(
+    (a, b) => a.date.localeCompare(b.date)
+  );
+
+  return { metrics, amazonSource };
 }
 
 /**
