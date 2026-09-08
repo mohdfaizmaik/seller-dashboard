@@ -20,6 +20,8 @@ import {
   getSalesTimeline
 } from '../services/analyticsService';
 import { useSellerData } from '../hooks/useSellerData';
+import { useSkuCosts } from '../hooks/useSkuCosts';
+import { useInventory } from '../hooks/useInventory';
 import { generateRecommendations } from '../services/recommendations/recommendationEngine';
 import { RecommendationsCard } from '../components/recommendations/RecommendationsCard';
 import {
@@ -35,6 +37,8 @@ import {
 export const Overview: React.FC = () => {
   const { platform, preset, startDate, endDate } = useFilters();
   const { orders, hasImportedData, useMockFallback, setUseMockFallback, batches } = useSellerData();
+  const { skuCostsMap } = useSkuCosts();
+  const { inventory } = useInventory();
 
   // Retrieve calculated metrics from the analytics service using active dataset
   const kpis = getOverviewMetrics(platform, preset, startDate, endDate, orders);
@@ -42,7 +46,7 @@ export const Overview: React.FC = () => {
   const topProducts = getProductRankings(platform, preset, 3, startDate, endDate, orders);
   const platformShares = getPlatformBreakdown(preset, startDate, endDate, orders);
   const timelineData = getSalesTimeline(platform, preset, startDate, endDate, orders);
-  const recommendations = generateRecommendations(orders);
+  const recommendations = generateRecommendations(orders, undefined, skuCostsMap, inventory);
 
   // Formatting helpers
   const formatINR = (num: number) => {

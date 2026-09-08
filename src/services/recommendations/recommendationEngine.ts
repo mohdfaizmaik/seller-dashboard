@@ -2,6 +2,8 @@ import type { Order } from '../../models/order';
 import { MARKETPLACE_CONFIG } from '../../data/marketplaceConfig';
 import { PRODUCTS_CATALOG } from '../../data/products';
 import { getSkuCostsSync, type SkuCost } from '../catalog/cogsService';
+import type { InventoryItem } from '../inventory/inventoryService';
+import { computeRestockMetrics, computeWorkingCapitalSummary } from '../inventory/inventoryCalculations';
 
 export interface Recommendation {
   id: string;
@@ -23,7 +25,8 @@ export interface Recommendation {
 export function generateRecommendations(
   orders: Order[],
   marketplaceConfigs: typeof MARKETPLACE_CONFIG = MARKETPLACE_CONFIG,
-  skuCostsMap?: Map<string, SkuCost>
+  skuCostsMap?: Map<string, SkuCost>,
+  inventoryItems?: InventoryItem[]
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
 
@@ -516,6 +519,82 @@ export function generateRecommendations(
       impact: 'low',
       marketplace: 'both'
     });
+  }
+
+  // -------------------------------------------------------------
+  // Inventory Intelligence Rules (Phase 8E)
+  // -------------------------------------------------------------
+  if (inventoryItems && inventoryItems.length > 0) {
+    // Rule 8: Critical Stockout Risk on High-Velocity SKUs
+    const stockoutRisks = inventoryItems
+      .map((item) => computeRestockMetrics(item, orders))
+      .filter(
+        (m) =>
+          (m.urgency === 'STOCKOUT' || m.urgency === 'CRITICAL_STOCKOUT_RISK') &&
+          (m.velocity.vDaily >= 0.2 || m.velocity.units30 >= 5)
+      );
+
+    if (stockoutRisks.length > 0) {
+      const dailyLostSales = stockoutRisks.reduce((sum, m) => sum + (m.velocity.vDaily * m.sellingPrice), 0);
+      recommendations.push({
+        id: 'rec_stockout_critical',
+        type: 'danger',
+        category: 'velocity',
+        title: 'Critical Stockout Risk on High-Velocity SKUs',
+        metric: `${stockoutRisks.length} Fast-Moving SKU(s) at Stockout Risk (~₹${Math.round(dailyLostSales).toLocaleString('en-IN')}/day lost sales)`,
+        description: `${stockoutRisks.map((s) => s.sku).slice(0, 3).join(', ')} have sellable inventory below supplier lead times or are completely stocked out, jeopardizing marketplace Buy Box ownership.`,
+        action: 'Issue expedited supplier purchase orders immediately and arrange priority courier shipping to avoid long-term organic search demotion.',
+        impact: 'high',
+        marketplace: 'both',
+        affectedSkus: stockoutRisks.map((s) => s.sku)
+      });
+    }
+
+    // Rule 9: Locked Dead Working Capital Drag
+    const capSummary = computeWorkingCapitalSummary(inventoryItems, orders);
+    if (capSummary.deadCapitalRatio >= 20 && capSummary.lockedDeadCapital >= 10000) {
+      recommendations.push({
+        id: 'rec_dead_capital',
+        type: 'warning',
+        category: 'concentration',
+        title: 'Working Capital Trapped in Stagnant Inventory',
+        metric: `₹${capSummary.lockedDeadCapital.toLocaleString('en-IN')} (${capSummary.deadCapitalRatio.toFixed(1)}% of warehouse capital) Locked`,
+        description: `${capSummary.deadStockCount} SKU(s) have accumulated over 120 days of supply or zero sales over trailing 30 days, restricting operating cash flow.`,
+        action: 'Execute clearance liquidation markdowns (25-35% discount) or bundle slow-moving units with high-converting catalog leaders to re-liquefy cash.',
+        impact: 'high',
+        marketplace: 'both',
+        affectedSkus: capSummary.deadStockList.slice(0, 5).map((d) => d.sku)
+      });
+    }
+
+    // Rule 10: Cross-Channel Velocity Imbalance
+    const azOrders = orders.filter((o) => (o.marketplace || o.platform) === 'amazon' && o.status !== 'cancelled');
+    const fkOrders = orders.filter((o) => (o.marketplace || o.platform) === 'flipkart' && o.status !== 'cancelled');
+    const mismatchSkus: string[] = [];
+
+    for (const item of inventoryItems) {
+      const azUnits = azOrders.filter((o) => (o.sku || '').toLowerCase() === item.sku.toLowerCase()).reduce((s, o) => s + (o.quantity || 1), 0);
+      const fkUnits = fkOrders.filter((o) => (o.sku || '').toLowerCase() === item.sku.toLowerCase()).reduce((s, o) => s + (o.quantity || 1), 0);
+
+      if ((azUnits >= 6 && fkUnits === 0) || (fkUnits >= 6 && azUnits === 0)) {
+        mismatchSkus.push(item.sku);
+      }
+    }
+
+    if (mismatchSkus.length > 0) {
+      recommendations.push({
+        id: 'rec_velocity_mismatch',
+        type: 'warning',
+        category: 'channel_arbitrage',
+        title: 'Cross-Channel Demand Velocity Imbalance',
+        metric: `${mismatchSkus.length} SKU(s) Active on Only One Marketplace`,
+        description: `High-demand SKUs like ${mismatchSkus.slice(0, 2).join(', ')} show strong sales momentum on one channel but zero presence on the other.`,
+        action: 'Expand catalog listings across both Amazon and Flipkart to double target buyer reach utilizing unified inventory fulfillment.',
+        impact: 'medium',
+        marketplace: 'both',
+        affectedSkus: mismatchSkus
+      });
+    }
   }
 
   // Sort: danger (high impact) -> warning (high/medium) -> opportunity -> info

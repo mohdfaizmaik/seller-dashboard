@@ -57,6 +57,7 @@
 ## server/validation/testStorageValidation.ts — Automated test validation suite for IndexedDB report storage, deduplication, and batch management.
 ## server/validation/testPhase6EFValidation.ts — Automated test validation suite verifying Indian regional state mapping, dual-marketplace comparison metrics, dynamic date anchoring, and recommendation engine rules.
 ## server/validation/testProfitValidation.ts — Automated test validation suite for Master Catalog COGS persistence, CSV bulk import/export, 8-step waterfall statement accounting, bank settlement reconciliation, and Minimum Viable Price (MVP) floor pricing rules.
+## server/validation/testInventoryValidation.ts — Automated test validation suite for Inventory Ledger persistence, multi-window sales velocity run rates (V7, V14, V30, V_daily), Days of Inventory (DOI), dynamic Reorder Points (ROP), urgency tier classifications, working capital analytics, and inventory recommendations.
 
 ## src/ — Client-side React application source code
 ## src/main.tsx — Application bootstrap mounting the App component into the root DOM element with StrictMode.
@@ -83,6 +84,9 @@
 ## src/components/catalog/CogsManagerModal.tsx — Modal dialog for managing SKU unit costs (manufacturing COGS, packaging, GST rate), inline editing, unconfigured SKU detection, and CSV bulk import/export.
 ## src/components/profit/SettlementReconciliationCard.tsx — Bank disbursement audit component reconciling estimated fees against actual debited settlement fees to identify hidden overcharges.
 ## src/components/profit/UnitEconomicsTable.tsx — Diagnostic module isolating unprofitable SKUs (profit-killers), severe RTO reverse logistics drag, and Minimum Viable Price (MVP) floor pricing.
+## src/components/inventory/RestockRecommendationTable.tsx — Restock replenishment table filterable by urgency (Stockout, Critical Risk, Reorder Now, Healthy, Overstocked, Dead Stock), with live DOI indicators, estimated purchase order investment values, and quick stock adjustments.
+## src/components/inventory/WorkingCapitalCard.tsx — Visual working capital audit component detailing active working capital vs. locked dead capital split, ratio progress bar, and dead inventory liquidation playbooks.
+## src/components/inventory/StockAdjustModal.tsx — Modal dialog enabling immediate editing of physical warehouse stock, reserved/in-transit units, supplier lead times, and safety buffers.
 
 ## src/pages/ — Primary dashboard page views
 ## src/pages/Overview.tsx — Executive dashboard displaying high-level KPI cards, tactical recommendations engine, revenue charts, recent orders, and category breakdowns.
@@ -91,12 +95,14 @@
 ## src/pages/Products.tsx — Product catalog performance ranking SKUs by revenue, units, profit margins, and marketplace distribution.
 ## src/pages/Orders.tsx — Searchable and filterable transaction log supporting status, platform, pagination, customer location, and net profitability calculations.
 ## src/pages/Profit.tsx — Itemized 8-step financial waterfall accounting statement (Gross Sales -> Refunds -> Net Sales -> COGS/Packaging -> Commissions -> Logistics/RTO -> Taxes -> Net Operating Profit), CSV statement export, settlement audit, and unit economics.
+## src/pages/Inventory.tsx — Inventory & Restock Command Center page view integrating portfolio KPIs, restock recommendation engine, working capital breakdown, CSV bulk upload/export, and stock adjustments.
 ## src/pages/MarketplacePerformance.tsx — Marketplace analytics view comparing traffic, sessions, conversion, buy box, and unit metrics.
 
 ## src/hooks/ — Custom React state and lifecycle hooks
 ## src/hooks/useFilters.ts — Synchronizes platform and date preset filters with URL search parameters.
 ## src/hooks/useSellerData.ts — Reactive hook providing persisted seller orders or mock data fallback to dashboard components.
 ## src/hooks/useSkuCosts.ts — Reactive hook providing persisted SKU costs, sync lookup map, and bulk update functions.
+## src/hooks/useInventory.ts — Reactive hook providing persisted inventory items, sync SKU lookup map, stock adjustment handler, bulk CSV updates, and default seed resets.
 
 ## src/models/ — TypeScript domain models and interface contracts
 ## src/models/analytics.ts — Data interfaces for KPI cards, daily sales aggregates, platform financial summaries, and itemized direct costs.
@@ -106,8 +112,10 @@
 
 ## src/services/ — Client business logic and data aggregation services
 ## src/services/analyticsService.ts — Computes financial summaries, margins, profit & loss, Indian regional distributions, marketplace comparison metrics, and timelines from live or mock orders with dynamic date anchoring and direct COGS/packaging deductions.
-## src/services/recommendations/recommendationEngine.ts — Pure tactical recommendation engine evaluating high return rates, margin erosion, unprofitable SKUs, cross-channel margin arbitrage, catalog revenue concentration, fulfillment disparity, and pricing floor violations.
+## src/services/recommendations/recommendationEngine.ts — Pure tactical recommendation engine evaluating high return rates, margin erosion, unprofitable SKUs, cross-channel margin arbitrage, catalog revenue concentration, fulfillment disparity, pricing floor violations, critical stockout risk, trapped dead capital, and cross-channel velocity mismatches.
 ## src/services/catalog/cogsService.ts — Master Catalog and COGS management service backed by IndexedDB and sync cache, with PRODUCTS_CATALOG seeding and CSV parsers.
+## src/services/inventory/inventoryService.ts — Inventory Ledger and persistence service backed by IndexedDB (SellerInventoryDB) with synchronous in-memory cache, default eCommerce stock profile seeding, stock adjustment handlers, and CSV bulk import/export.
+## src/services/inventory/inventoryCalculations.ts — Pure calculation engine computing multi-window sales velocities (V7, V14, V30, V_daily), Days of Inventory Remaining (DOI), dynamic Reorder Points (ROP), recommended reorder quantities, PO value requirements, urgency tier classification, and working capital summaries.
 ## src/services/settlement/settlementService.ts — Settlement report ingestion bridge for Amazon Date Range Financial files and Flipkart Settlement sheets, with discrepancy reconciliation.
 ## src/services/marketplaceReportService.ts — Coordinates retrieval of normalized performance metrics from backend API or local report fallbacks.
 ## src/services/marketplaceApiService.ts — Client API service fetching Amazon performance metrics with shape validation guards.

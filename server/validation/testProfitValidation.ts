@@ -2,10 +2,8 @@ import type { Order } from '../../src/models/order';
 import {
   seedDefaultSkuCosts,
   getSkuCostsSync,
-  getAllSkuCosts,
   saveSkuCost,
   bulkSaveSkuCosts,
-  getSkuCost,
   parseCogsCsv,
   exportCogsCsv,
   type SkuCost
@@ -15,8 +13,7 @@ import {
   detectSettlementReport,
   parseAmazonSettlement,
   parseFlipkartSettlement,
-  reconcileSettlementWithOrders,
-  type SettlementRecord
+  reconcileSettlementWithOrders
 } from '../../src/services/settlement/settlementService';
 import { generateRecommendations } from '../../src/services/recommendations/recommendationEngine';
 import { PRODUCTS_CATALOG } from '../../src/data/products';
@@ -132,6 +129,7 @@ const testOrders: Order[] = [
     platform: 'amazon',
     marketplace: 'amazon',
     productId: 'prod-1',
+    productName: 'boAt Rockerz 450',
     sku: 'BOAT-RK450-BLK',
     orderValue: 1500,
     gross_amount: 1500,
@@ -147,6 +145,7 @@ const testOrders: Order[] = [
     platform: 'amazon',
     marketplace: 'amazon',
     productId: 'prod-custom',
+    productName: 'Custom SKU Product',
     sku: 'CUSTOM-TEST-SKU',
     orderValue: 1000,
     gross_amount: 1000,
@@ -162,6 +161,7 @@ const testOrders: Order[] = [
     platform: 'amazon',
     marketplace: 'amazon',
     productId: 'prod-1',
+    productName: 'boAt Rockerz 450',
     sku: 'BOAT-RK450-BLK',
     orderValue: 1500,
     gross_amount: 1500,
@@ -177,6 +177,7 @@ const testOrders: Order[] = [
     platform: 'amazon',
     marketplace: 'amazon',
     productId: 'prod-1',
+    productName: 'boAt Rockerz 450',
     sku: 'BOAT-RK450-BLK',
     orderValue: 1500,
     gross_amount: 1500,
@@ -295,6 +296,8 @@ const mvpViolationOrders: Order[] = [
     orderDate: '2026-08-01',
     platform: 'amazon',
     marketplace: 'amazon',
+    productId: 'prod-1',
+    productName: 'boAt Rockerz 450',
     sku: 'BOAT-RK450-BLK',
     orderValue: 900, // Below MVP 1057
     gross_amount: 900,
@@ -309,6 +312,8 @@ const mvpViolationOrders: Order[] = [
     orderDate: '2026-08-02',
     platform: 'amazon',
     marketplace: 'amazon',
+    productId: 'prod-1',
+    productName: 'boAt Rockerz 450',
     sku: 'BOAT-RK450-BLK',
     orderValue: 900,
     gross_amount: 900,

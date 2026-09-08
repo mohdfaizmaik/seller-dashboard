@@ -8,6 +8,7 @@ import {
   DollarSign, 
   Activity,
   Store,
+  Boxes,
   X 
 } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/products', label: 'Product Performance', icon: Package },
     { path: '/orders', label: 'Order Management', icon: ShoppingCart },
     { path: '/profit', label: 'Profit & Expenses', icon: DollarSign },
+    { path: '/inventory', label: 'Inventory & Stock', icon: Boxes },
     { path: '/comparison', label: 'Platform Comparison', icon: Activity },
   ];
 

@@ -17,7 +17,8 @@
     "test:importer": "tsx server/validation/testImportValidation.ts",
     "test:storage": "tsx server/validation/testStorageValidation.ts",
     "test:phase6ef": "tsx server/validation/testPhase6EFValidation.ts",
-    "test:profit": "tsx server/validation/testProfitValidation.ts"
+    "test:profit": "tsx server/validation/testProfitValidation.ts",
+    "test:inventory": "tsx server/validation/testInventoryValidation.ts"
   },
   "dependencies": {
     "lucide-react": "^1.31.0",

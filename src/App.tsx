@@ -6,6 +6,7 @@ import { Sales } from './pages/Sales';
 import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
 import { Profit } from './pages/Profit';
+import { Inventory } from './pages/Inventory';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="products" element={<Products />} />
           <Route path="orders" element={<Orders />} />
           <Route path="profit" element={<Profit />} />
+          <Route path="inventory" element={<Inventory />} />
           <Route path="comparison" element={<Marketplace />} />
           {/* Wildcard redirect to overview page */}
           <Route path="*" element={<Navigate to="/" replace />} />
