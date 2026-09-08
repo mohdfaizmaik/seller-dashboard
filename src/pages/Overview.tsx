@@ -19,6 +19,9 @@ import {
   getPlatformBreakdown,
   getSalesTimeline
 } from '../services/analyticsService';
+import { useSellerData } from '../hooks/useSellerData';
+import { generateRecommendations } from '../services/recommendations/recommendationEngine';
+import { RecommendationsCard } from '../components/recommendations/RecommendationsCard';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -31,13 +34,15 @@ import {
 
 export const Overview: React.FC = () => {
   const { platform, preset, startDate, endDate } = useFilters();
+  const { orders, hasImportedData, useMockFallback, setUseMockFallback, batches } = useSellerData();
 
-  // Retrieve calculated metrics from the analytics service
-  const kpis = getOverviewMetrics(platform, preset, startDate, endDate);
-  const recentOrders = getRecentOrders(platform, preset, 3, startDate, endDate);
-  const topProducts = getProductRankings(platform, preset, 3, startDate, endDate);
-  const platformShares = getPlatformBreakdown(preset, startDate, endDate);
-  const timelineData = getSalesTimeline(platform, preset, startDate, endDate);
+  // Retrieve calculated metrics from the analytics service using active dataset
+  const kpis = getOverviewMetrics(platform, preset, startDate, endDate, orders);
+  const recentOrders = getRecentOrders(platform, preset, 3, startDate, endDate, orders);
+  const topProducts = getProductRankings(platform, preset, 3, startDate, endDate, orders);
+  const platformShares = getPlatformBreakdown(preset, startDate, endDate, orders);
+  const timelineData = getSalesTimeline(platform, preset, startDate, endDate, orders);
+  const recommendations = generateRecommendations(orders);
 
   // Formatting helpers
   const formatINR = (num: number) => {
@@ -112,12 +117,22 @@ export const Overview: React.FC = () => {
         subtitle="Unified metrics driven from deterministic seller datasets."
         actions={
           <div className="flex items-center gap-2">
+            {hasImportedData && (
+              <Button
+                variant={useMockFallback ? 'ghost' : 'secondary'}
+                size="sm"
+                onClick={() => setUseMockFallback(!useMockFallback)}
+                style={{ fontSize: '11px', padding: '4px 10px' }}
+                title="Toggle between imported data and demo data"
+              >
+                {useMockFallback
+                  ? 'Switch to Imported Data'
+                  : `Using Imported Reports (${batches.length})`}
+              </Button>
+            )}
             <span className="text-xs" style={{ backgroundColor: 'var(--bg-surface)', padding: '6px 12px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
               {getFilterSummary()}
             </span>
-            <Button variant="primary" size="sm">
-              Sync Data
-            </Button>
           </div>
         }
       />
@@ -201,6 +216,9 @@ export const Overview: React.FC = () => {
           </CardBody>
         </Card>
       </div>
+
+      {/* Seller Recommendations & Tactical Insights – Phase 6F */}
+      <RecommendationsCard recommendations={recommendations} />
 
       {/* Main Charts area */}
       <div className="dashboard-row-grid">

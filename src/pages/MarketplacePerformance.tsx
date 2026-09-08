@@ -183,7 +183,7 @@ export const MarketplacePerformance: React.FC = () => {
   // Async backend-enhanced state (Amazon backend → preferred, local → fallback).
   const [enhancedData, setEnhancedData] = React.useState<{
     metrics: MarketplaceDailyMetric[];
-    amazonSource: 'backend' | 'local';
+    amazonSource: 'backend' | 'local' | 'imported';
   } | null>(null);
   const [backendLoading, setBackendLoading] = React.useState(false);
 

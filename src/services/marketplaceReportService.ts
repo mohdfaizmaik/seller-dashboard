@@ -30,6 +30,7 @@ import type { MarketplaceDailyMetric, MarketplacePlatform } from '../models/mark
 import type { PlatformFilter, DatePresetFilter } from '../hooks/useFilters';
 import { getDateRangeFromPreset } from './analyticsService';
 import { getAmazonPerformance } from './marketplaceApiService';
+import { getImportedMetrics } from './marketplaceImportService';
 
 /**
  * Builds the full normalized corpus from active local-report adapters (once).
@@ -92,18 +93,48 @@ export function getMarketplaceDailyMetrics(
   startDate?: string,
   endDate?: string
 ): MarketplaceDailyMetric[] {
-  return NORMALIZED_MARKETPLACE_METRICS.filter((row) => {
-    if (platform !== 'all' && row.platform !== platform) {
-      return false;
+  const imported = getImportedMetrics();
+
+  const wantAmazon = platform === 'all' || platform === 'amazon';
+  const wantFlipkart = platform === 'all' || platform === 'flipkart';
+
+  let amazonMetrics: MarketplaceDailyMetric[] = [];
+  if (wantAmazon) {
+    const importedAmazon = imported.filter(
+      (m) => m.platform === 'amazon' &&
+      (!startDate || m.date >= startDate) &&
+      (!endDate || m.date <= endDate)
+    );
+    if (importedAmazon.length > 0) {
+      amazonMetrics = importedAmazon;
+    } else {
+      amazonMetrics = NORMALIZED_MARKETPLACE_METRICS.filter(
+        (m) => m.platform === 'amazon' &&
+        (!startDate || m.date >= startDate) &&
+        (!endDate || m.date <= endDate)
+      );
     }
-    if (startDate && row.date < startDate) {
-      return false;
+  }
+
+  let flipkartMetrics: MarketplaceDailyMetric[] = [];
+  if (wantFlipkart) {
+    const importedFlipkart = imported.filter(
+      (m) => m.platform === 'flipkart' &&
+      (!startDate || m.date >= startDate) &&
+      (!endDate || m.date <= endDate)
+    );
+    if (importedFlipkart.length > 0) {
+      flipkartMetrics = importedFlipkart;
+    } else {
+      flipkartMetrics = NORMALIZED_MARKETPLACE_METRICS.filter(
+        (m) => m.platform === 'flipkart' &&
+        (!startDate || m.date >= startDate) &&
+        (!endDate || m.date <= endDate)
+      );
     }
-    if (endDate && row.date > endDate) {
-      return false;
-    }
-    return true;
-  });
+  }
+
+  return [...amazonMetrics, ...flipkartMetrics].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /**
@@ -138,34 +169,57 @@ export function getMarketplaceNormalizationDemo(): {
  *
  * Never returns duplicate Amazon data (backend + local).
  */
+/**
+ * Phase 5D — async backend-enabled data fetcher for MarketplacePerformance.
+ *
+ * Source strategy:
+ *   Amazon  → imported (if active imported report exists) → backend (preferred) → local adapter (fallback)
+ *   Flipkart → imported (if active imported report exists) → local adapter only
+ *   Meesho  → not implemented
+ *
+ * Does NOT replace getMarketplaceDailyMetrics which remains the synchronous
+ * local-only function used by validation, Overview, and other consumers.
+ *
+ * Never returns duplicate Amazon data (backend + local).
+ */
 export async function getMarketplacePerformanceData(
   platform: PlatformFilter,
   startDate: string,
   endDate: string
 ): Promise<{
   metrics: MarketplaceDailyMetric[];
-  amazonSource: 'backend' | 'local';
+  amazonSource: 'backend' | 'local' | 'imported';
 }> {
   const wantAmazon = platform === 'all' || platform === 'amazon';
   const wantFlipkart = platform === 'all' || platform === 'flipkart';
 
+  const imported = getImportedMetrics();
+
   let amazonMetrics: MarketplaceDailyMetric[] = [];
-  let amazonSource: 'backend' | 'local' = 'local';
+  let amazonSource: 'backend' | 'local' | 'imported' = 'local';
 
   if (wantAmazon) {
-    const result = await getAmazonPerformance(startDate, endDate);
-    if (result.ok) {
-      // Backend succeeded (may be empty []) — use backend data exclusively
-      amazonMetrics = result.data;
-      amazonSource = 'backend';
+    const importedAmazon = imported.filter(
+      (m) => m.platform === 'amazon' && m.date >= startDate && m.date <= endDate
+    );
+    if (importedAmazon.length > 0) {
+      amazonMetrics = importedAmazon;
+      amazonSource = 'imported';
     } else {
-      // Backend failed — fall back to existing local adapter
-      amazonMetrics = getMarketplaceDailyMetrics('amazon', startDate, endDate);
-      amazonSource = 'local';
+      const result = await getAmazonPerformance(startDate, endDate);
+      if (result.ok) {
+        // Backend succeeded (may be empty []) — use backend data exclusively
+        amazonMetrics = result.data;
+        amazonSource = 'backend';
+      } else {
+        // Backend failed — fall back to existing local adapter
+        amazonMetrics = getMarketplaceDailyMetrics('amazon', startDate, endDate);
+        amazonSource = 'local';
+      }
     }
   }
 
-  // Flipkart: always local adapter
+  // Flipkart: imported (if active imported report exists) -> local adapter only
   let flipkartMetrics: MarketplaceDailyMetric[] = [];
   if (wantFlipkart) {
     flipkartMetrics = getMarketplaceDailyMetrics('flipkart', startDate, endDate);

@@ -13,7 +13,10 @@
     "test:server:amazon": "tsx server/validation/amazonPhase5bValidation.ts",
     "test:server:amazon:reports": "tsx server/validation/amazonPhase5cValidation.ts",
     "test:server:amazon:all": "npm run test:server:amazon && npm run test:server:amazon:reports",
-    "test:phase5d": "tsx server/validation/phase5dFrontendValidation.ts"
+    "test:phase5d": "tsx server/validation/phase5dFrontendValidation.ts",
+    "test:importer": "tsx server/validation/testImportValidation.ts",
+    "test:storage": "tsx server/validation/testStorageValidation.ts",
+    "test:phase6ef": "tsx server/validation/testPhase6EFValidation.ts"
   },
   "dependencies": {
     "lucide-react": "^1.31.0",

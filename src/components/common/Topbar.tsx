@@ -1,7 +1,10 @@
-import React from 'react';
-import { Menu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, UploadCloud } from 'lucide-react';
 import { useFilters } from '../../hooks/useFilters';
 import type { PlatformFilter, DatePresetFilter } from '../../hooks/useFilters';
+import { Button } from '../ui/Button';
+import { ReportUploadModal } from '../importer/ReportUploadModal';
+import { useSellerData } from '../../hooks/useSellerData';
 
 interface TopbarProps {
   onMenuToggle: () => void;
@@ -9,6 +12,8 @@ interface TopbarProps {
 
 export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
   const { platform, preset, startDate, endDate, setFilters } = useFilters();
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const { hasImportedData, reloadData } = useSellerData();
 
   const handlePlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilters({ platform: e.target.value as PlatformFilter });
@@ -93,7 +98,39 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
             />
           </div>
         )}
+
+        {/* Import Report Button */}
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={() => setIsUploadModalOpen(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '6px 12px' }}
+        >
+          <UploadCloud size={15} />
+          <span>Import Report</span>
+          {hasImportedData && (
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--color-success)',
+                display: 'inline-block'
+              }}
+              title="Custom imported data active"
+            />
+          )}
+        </Button>
       </div>
+
+      <ReportUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onImportSuccess={() => {
+          reloadData();
+        }}
+      />
     </header>
   );
 };

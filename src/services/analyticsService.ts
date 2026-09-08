@@ -12,14 +12,37 @@ import type { PlatformFilter, DatePresetFilter } from '../hooks/useFilters';
 
 /**
  * Returns Start and End Dates based on a preset, relative to the Aug 10, 2026 anchor date.
+/**
+ * Returns Start and End Dates based on a preset.
+ * Dynamically anchors to the latest date in the provided orders array,
+ * or falls back to the canonical Aug 10, 2026 anchor date.
  */
 export function getDateRangeFromPreset(
   preset: DatePresetFilter,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
+  orders?: Order[]
 ): { start: Date; end: Date } {
-  const end = new Date(2026, 7, 10); // Aug 10, 2026
-  const start = new Date(2026, 7, 10);
+  let anchor = new Date(2026, 7, 10); // Aug 10, 2026
+
+  if (orders && orders.length > 0 && preset !== 'custom') {
+    let maxTime = -Infinity;
+    for (const o of orders) {
+      const raw = o.orderDate || o.date;
+      if (raw) {
+        const t = new Date(raw).getTime();
+        if (!isNaN(t) && t > maxTime) {
+          maxTime = t;
+        }
+      }
+    }
+    if (maxTime > 0) {
+      anchor = new Date(maxTime);
+    }
+  }
+
+  const end = new Date(anchor.getTime());
+  const start = new Date(anchor.getTime());
 
   switch (preset) {
     case 'today':
@@ -31,7 +54,7 @@ export function getDateRangeFromPreset(
       start.setDate(end.getDate() - 29);
       break;
     case 'ytd':
-      start.setMonth(0, 1); // Jan 1, 2026
+      start.setFullYear(anchor.getFullYear(), 0, 1); // Jan 1 of anchor year
       break;
     case 'custom':
       if (customStart) {
@@ -57,6 +80,20 @@ export function getDateRangeFromPreset(
   end.setHours(23, 59, 59, 999);
 
   return { start, end };
+}
+
+/** Enforces Indian numbering and currency formatting (₹ via Intl.NumberFormat('en-IN')) */
+export function formatINR(val: number, maximumFractionDigits = 0): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits
+  }).format(val);
+}
+
+/** Formats percentage with standard decimals */
+export function formatPercent(val: number, digits = 1): string {
+  return `${val.toFixed(digits)}%`;
 }
 
 /**
@@ -225,13 +262,14 @@ export function getOverviewMetrics(
   platform: PlatformFilter,
   preset: DatePresetFilter,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
+  orders: Order[] = MOCK_ORDERS
 ): OverviewMetrics {
-  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd);
+  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd, orders);
   const prevRange = getPreviousPeriod(start, end);
 
-  const current = calculateFinancialSummary(MOCK_ORDERS, start, end, platform);
-  const previous = calculateFinancialSummary(MOCK_ORDERS, prevRange.start, prevRange.end, platform);
+  const current = calculateFinancialSummary(orders, start, end, platform);
+  const previous = calculateFinancialSummary(orders, prevRange.start, prevRange.end, platform);
 
   return {
     totalRevenue: current.grossRevenue,
@@ -261,13 +299,14 @@ export function getRecentOrders(
   preset: DatePresetFilter,
   limit = 5,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
+  orders: Order[] = MOCK_ORDERS
 ): Order[] {
-  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd);
+  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd, orders);
 
-  return MOCK_ORDERS.filter(o => {
+  return orders.filter(o => {
     if (platform !== 'all' && o.platform !== platform) return false;
-    const oDate = new Date(o.orderDate);
+    const oDate = new Date(o.orderDate || o.date || '');
     return oDate >= start && oDate <= end;
   }).slice(0, limit);
 }
@@ -280,11 +319,12 @@ export function getProductRankings(
   preset: DatePresetFilter,
   limit = 5,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
+  orders: Order[] = MOCK_ORDERS
 ): Product[] {
-  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd);
+  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd, orders);
 
-  const activeOrdersInScope = MOCK_ORDERS.filter(o => {
+  const activeOrdersInScope = orders.filter(o => {
     if (platform !== 'all' && o.platform !== platform) return false;
     const oDate = new Date(o.orderDate);
     return oDate >= start && oDate <= end;
@@ -403,12 +443,13 @@ export function getProductRankings(
 export function getPlatformBreakdown(
   preset: DatePresetFilter,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
+  orders: Order[] = MOCK_ORDERS
 ): PlatformBreakdown[] {
-  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd);
+  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd, orders);
 
-  const az = calculateFinancialSummary(MOCK_ORDERS, start, end, 'amazon');
-  const fk = calculateFinancialSummary(MOCK_ORDERS, start, end, 'flipkart');
+  const az = calculateFinancialSummary(orders, start, end, 'amazon');
+  const fk = calculateFinancialSummary(orders, start, end, 'flipkart');
 
   return [
     {
@@ -463,7 +504,8 @@ function groupOrdersByDate(
   // 2. Group orders by the date portion of orderDate
   const ordersByDate = new Map<string, Order[]>();
   filteredOrders.forEach(o => {
-    const dateKey = new Date(o.orderDate).toISOString().split('T')[0];
+    const rawDate = o.orderDate || o.date || '';
+    const dateKey = new Date(rawDate).toISOString().split('T')[0];
     const arr = ordersByDate.get(dateKey) ?? [];
     arr.push(o);
     ordersByDate.set(dateKey, arr);
@@ -500,17 +542,228 @@ export function getSalesTimeline(
   platform: PlatformFilter,
   preset: DatePresetFilter,
   customStart?: string,
-  customEnd?: string
+  customEnd?: string,
+  orders: Order[] = MOCK_ORDERS
 ): DailyChartMetric[] {
-  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd);
+  const { start, end } = getDateRangeFromPreset(preset, customStart, customEnd, orders);
 
   // Filter orders based on platform and date range
-  const filteredOrders = MOCK_ORDERS.filter(o => {
+  const filteredOrders = orders.filter(o => {
     if (platform !== 'all' && o.platform !== platform) return false;
-    const oDate = new Date(o.orderDate);
+    const oDate = new Date(o.orderDate || o.date || '');
     return oDate >= start && oDate <= end;
   });
 
   // Delegate grouping and daily metric calculation to the shared helper
   return groupOrdersByDate(filteredOrders, start, end, platform);
 }
+
+// -------------------------------------------------------------
+// Regional Distribution & India Zones
+// -------------------------------------------------------------
+
+export type IndiaRegion = 'North' | 'South' | 'West' | 'East' | 'Central' | 'Other';
+
+export interface RegionalDistributionItem {
+  region: IndiaRegion;
+  orderCount: number;
+  revenue: number;
+  percentage: number;
+  states: string[];
+}
+
+const REGION_MAPPING: Record<string, IndiaRegion> = {
+  // North
+  delhi: 'North',
+  'new delhi': 'North',
+  haryana: 'North',
+  punjab: 'North',
+  'himachal pradesh': 'North',
+  'jammu and kashmir': 'North',
+  'jammu & kashmir': 'North',
+  ladakh: 'North',
+  uttarakhand: 'North',
+  'uttar pradesh': 'North',
+  chandigarh: 'North',
+  rajasthan: 'North',
+
+  // South
+  karnataka: 'South',
+  'tamil nadu': 'South',
+  kerala: 'South',
+  'andhra pradesh': 'South',
+  telangana: 'South',
+  puducherry: 'South',
+
+  // West
+  maharashtra: 'West',
+  gujarat: 'West',
+  goa: 'West',
+  'dadra and nagar haveli and daman and diu': 'West',
+  'daman and diu': 'West',
+
+  // East
+  'west bengal': 'East',
+  odisha: 'East',
+  orissa: 'East',
+  bihar: 'East',
+  jharkhand: 'East',
+  assam: 'East',
+  sikkim: 'East',
+  'arunachal pradesh': 'East',
+  nagaland: 'East',
+  manipur: 'East',
+  mizoram: 'East',
+  tripura: 'East',
+  meghalaya: 'East',
+
+  // Central
+  'madhya pradesh': 'Central',
+  chhattisgarh: 'Central'
+};
+
+export function getRegionForState(stateName?: string): IndiaRegion {
+  if (!stateName) return 'Other';
+  const clean = stateName.trim().toLowerCase().replace(/[^a-z\s&]/g, '');
+  return REGION_MAPPING[clean] || 'Other';
+}
+
+/**
+ * Aggregates order geographic distribution across major Indian regions.
+ */
+export function getRegionalDistribution(
+  orders: Order[],
+  start?: Date,
+  end?: Date,
+  platform: PlatformFilter = 'all'
+): RegionalDistributionItem[] {
+  const filtered = orders.filter((o) => {
+    if (o.status === 'cancelled') return false;
+    if (platform !== 'all' && o.platform !== platform) return false;
+    if (start || end) {
+      const d = new Date(o.orderDate || o.date || '');
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+    }
+    return true;
+  });
+
+  const totals: Record<IndiaRegion, { orderCount: number; revenue: number; states: Set<string> }> = {
+    North: { orderCount: 0, revenue: 0, states: new Set() },
+    South: { orderCount: 0, revenue: 0, states: new Set() },
+    West: { orderCount: 0, revenue: 0, states: new Set() },
+    East: { orderCount: 0, revenue: 0, states: new Set() },
+    Central: { orderCount: 0, revenue: 0, states: new Set() },
+    Other: { orderCount: 0, revenue: 0, states: new Set() }
+  };
+
+  let totalRev = 0;
+
+  for (const o of filtered) {
+    const state = o.shipToState || '';
+    const region = getRegionForState(state);
+    totals[region].orderCount += 1;
+    const val = o.orderValue || o.gross_amount || 0;
+    totals[region].revenue += val;
+    if (state) totals[region].states.add(state);
+    totalRev += val;
+  }
+
+  const regions: IndiaRegion[] = ['North', 'South', 'West', 'East', 'Central', 'Other'];
+  return regions.map((region) => {
+    const data = totals[region];
+    return {
+      region,
+      orderCount: data.orderCount,
+      revenue: Number(data.revenue.toFixed(2)),
+      percentage: totalRev > 0 ? Number(((data.revenue / totalRev) * 100).toFixed(1)) : 0,
+      states: Array.from(data.states)
+    };
+  });
+}
+
+// -------------------------------------------------------------
+// Marketplace Comparison
+// -------------------------------------------------------------
+
+export interface MarketplaceSideBySideMetric {
+  marketplace: 'amazon' | 'flipkart';
+  displayName: string;
+  grossRevenue: number;
+  unitsSold: number;
+  orderCount: number;
+  aov: number;
+  returnRate: number;
+  returnedCount: number;
+  cancelledCount: number;
+  marketplaceFees: number;
+  shipping: number;
+  advertising: number;
+  netProfit: number;
+  profitMargin: number;
+}
+
+export interface DualMarketplaceComparison {
+  amazon: MarketplaceSideBySideMetric;
+  flipkart: MarketplaceSideBySideMetric;
+  blended: {
+    grossRevenue: number;
+    unitsSold: number;
+    orderCount: number;
+    aov: number;
+    returnRate: number;
+    netProfit: number;
+    profitMargin: number;
+    marketplaceFees: number;
+  };
+}
+
+/**
+ * Calculates a comprehensive side-by-side comparison between Amazon and Flipkart.
+ */
+export function getMarketplaceComparison(
+  orders: Order[],
+  start: Date,
+  end: Date
+): DualMarketplaceComparison {
+  const azSummary = calculateFinancialSummary(orders, start, end, 'amazon');
+  const fkSummary = calculateFinancialSummary(orders, start, end, 'flipkart');
+  const blendedSummary = calculateFinancialSummary(orders, start, end, 'all');
+
+  const toMetric = (
+    mkt: 'amazon' | 'flipkart',
+    disp: string,
+    s: FinancialSummary
+  ): MarketplaceSideBySideMetric => ({
+    marketplace: mkt,
+    displayName: disp,
+    grossRevenue: s.grossRevenue,
+    unitsSold: s.unitsSold,
+    orderCount: s.orderCount,
+    aov: Number(s.aov.toFixed(2)),
+    returnRate: Number(s.returnRate.toFixed(2)),
+    returnedCount: s.returnedOrderCount,
+    cancelledCount: s.cancelledOrderCount,
+    marketplaceFees: Number(s.marketplaceFees.toFixed(2)),
+    shipping: Number(s.shipping.toFixed(2)),
+    advertising: Number(s.advertising.toFixed(2)),
+    netProfit: Number(s.netProfit.toFixed(2)),
+    profitMargin: Number(s.profitMargin.toFixed(2))
+  });
+
+  return {
+    amazon: toMetric('amazon', 'Amazon India', azSummary),
+    flipkart: toMetric('flipkart', 'Flipkart', fkSummary),
+    blended: {
+      grossRevenue: blendedSummary.grossRevenue,
+      unitsSold: blendedSummary.unitsSold,
+      orderCount: blendedSummary.orderCount,
+      aov: Number(blendedSummary.aov.toFixed(2)),
+      returnRate: Number(blendedSummary.returnRate.toFixed(2)),
+      netProfit: Number(blendedSummary.netProfit.toFixed(2)),
+      profitMargin: Number(blendedSummary.profitMargin.toFixed(2)),
+      marketplaceFees: Number(blendedSummary.marketplaceFees.toFixed(2))
+    }
+  };
+}
+
