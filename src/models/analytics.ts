@@ -57,6 +57,9 @@ export interface FinancialSummary {
   cancelledOrderCount: number;// Count of cancelled orders (status === 'cancelled')
   unitsSold: number;          // Total quantity of items sold in active orders
   cogs: number;               // Cost of Goods Sold for active orders
+  packagingCost?: number;     // Direct packaging materials (boxes, tape, bubble wrap, labels)
+  totalDirectCosts?: number;  // cogs + packagingCost
+  taxes?: number;             // Output GST / tax liabilities
   marketplaceFees: number;    // Amazon referral or Flipkart commission + fixed closing fees
   shipping: number;           // Fulfilled shipping charges
   advertising: number;        // Advertising campaign spend

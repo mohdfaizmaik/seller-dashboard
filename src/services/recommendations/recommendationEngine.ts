@@ -1,6 +1,7 @@
 import type { Order } from '../../models/order';
 import { MARKETPLACE_CONFIG } from '../../data/marketplaceConfig';
 import { PRODUCTS_CATALOG } from '../../data/products';
+import { getSkuCostsSync, type SkuCost } from '../catalog/cogsService';
 
 export interface Recommendation {
   id: string;
@@ -21,7 +22,8 @@ export interface Recommendation {
  */
 export function generateRecommendations(
   orders: Order[],
-  marketplaceConfigs: typeof MARKETPLACE_CONFIG = MARKETPLACE_CONFIG
+  marketplaceConfigs: typeof MARKETPLACE_CONFIG = MARKETPLACE_CONFIG,
+  skuCostsMap?: Map<string, SkuCost>
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
 
@@ -111,15 +113,20 @@ export function generateRecommendations(
   const totalFees = azStats.fees + fkStats.fees;
 
   // SKU level statistics
+  const costCatalog = skuCostsMap || getSkuCostsSync();
+
   const skuStatsMap = new Map<
     string,
     {
       sku: string;
       name: string;
       orders: number;
+      units: number;
       returns: number;
+      returnLoss: number;
       revenue: number;
       cogs: number;
+      packaging: number;
       fees: number;
       netProfit: number;
       azOrders: number;
@@ -134,23 +141,32 @@ export function generateRecommendations(
   for (const o of orders) {
     if (o.status === 'cancelled') continue;
     const sku = o.sku || 'UNKNOWN-SKU';
-    const prod = PRODUCTS_CATALOG.find((p) => p.id === o.productId || p.sku === sku);
-    const cost = prod ? prod.costPrice : 0;
+    const prod = PRODUCTS_CATALOG.find((p) => p.id === o.productId || p.sku.toLowerCase() === sku.toLowerCase());
+
+    const skuEntry = costCatalog.get(sku.toLowerCase());
+    const cost = skuEntry ? skuEntry.cogs : (prod ? prod.costPrice : 0);
+    const packaging = skuEntry ? skuEntry.packagingCost : 25;
+
     const val = o.gross_amount || o.orderValue || 0;
     const qty = o.quantity || 1;
 
     const plat = (o.marketplace || o.platform) === 'amazon' ? 'amazon' : 'flipkart';
     const cfg = marketplaceConfigs[plat];
     const fee = o.estimatedFees?.totalFees ?? ((val * cfg.referralFeeRate) + cfg.fixedClosingFee);
-    const profit = o.estimatedNetProfit ?? (val - (cost * qty) - fee - (o.shipping_fee || cfg.flatShippingRate));
+    const ship = o.shipping_fee ?? cfg.flatShippingRate;
+    const directCost = (cost + packaging) * qty;
+    const profit = val - directCost - fee - ship;
 
     const existing = skuStatsMap.get(sku) || {
       sku,
       name: o.product_name || o.productName || prod?.name || sku,
       orders: 0,
+      units: 0,
       returns: 0,
+      returnLoss: 0,
       revenue: 0,
       cogs: 0,
+      packaging: 0,
       fees: 0,
       netProfit: 0,
       azOrders: 0,
@@ -162,13 +178,17 @@ export function generateRecommendations(
     };
 
     existing.orders += 1;
+    existing.units += qty;
     existing.revenue += val;
     existing.cogs += cost * qty;
+    existing.packaging += packaging * qty;
     existing.fees += fee;
     existing.netProfit += profit;
 
     if (o.status === 'returned') {
       existing.returns += 1;
+      const damageLoss = (cost * qty) * marketplaceConfigs.returns.writeOffPercentage;
+      existing.returnLoss += marketplaceConfigs.returns.flatReturnShipping + marketplaceConfigs.returns.reverseProcessingFee + damageLoss;
     }
 
     if (plat === 'amazon') {
@@ -237,6 +257,27 @@ export function generateRecommendations(
     }
   });
 
+  // 1c. Severe RTO & Reverse Logistics Drag
+  skuStatsMap.forEach((s) => {
+    if (s.orders >= 3 && s.returns >= 2 && s.revenue > 0) {
+      const dragRatio = (s.returnLoss / s.revenue) * 100;
+      if (dragRatio >= 20) {
+        recommendations.push({
+          id: `rec_rto_drag_${s.sku.toLowerCase()}`,
+          type: 'danger',
+          category: 'returns',
+          title: `Severe RTO Reverse Logistics Drag: ${s.sku}`,
+          metric: `Reverse Costs: ₹${s.returnLoss.toFixed(0)} (${dragRatio.toFixed(1)}% of sales)`,
+          description: `Returns on "${s.name}" are incurring severe profit drain in two-way courier fees, reverse processing, and write-off losses.`,
+          action: `Audit protective transit packaging, verify product dimensions against marketplace listings, and disable Cash on Delivery (COD) for high-return pin codes.`,
+          impact: 'high',
+          marketplace: s.azOrders > s.fkOrders ? 'amazon' : (s.fkOrders > s.azOrders ? 'flipkart' : 'both'),
+          affectedSkus: [s.sku]
+        });
+      }
+    }
+  });
+
   // -------------------------------------------------------------
   // Rule 2: Negative or Thin Margin Warnings
   // -------------------------------------------------------------
@@ -283,6 +324,36 @@ export function generateRecommendations(
           description: `"${s.name}" is losing money on every fulfilled order once COGS, marketplace commissions, and shipping expenses are deducted.`,
           action: `Raise selling price by at least ₹${Math.ceil((Math.abs(s.netProfit) / s.orders) + 30)} immediately, or pause active promotional discounts on this SKU.`,
           impact: 'high',
+          marketplace: s.azOrders > s.fkOrders ? 'amazon' : (s.fkOrders > s.azOrders ? 'flipkart' : 'both'),
+          affectedSkus: [s.sku]
+        });
+      }
+    }
+  });
+
+  // 2c. Minimum Viable Price (MVP) Pricing Floor Violation
+  skuStatsMap.forEach((s) => {
+    if (s.orders >= 2 && s.units > 0 && s.revenue > 0 && s.netProfit > 0) {
+      const avgPrice = s.revenue / s.units;
+      const unitCogs = s.cogs / s.units;
+      const unitPkg = s.packaging / s.units;
+      const referralRate = 0.14; // Blended
+      const closingFee = 20;
+      const shipping = 55;
+      const targetMargin = 0.15; // 15% target
+      const mvp = (unitCogs + unitPkg + closingFee + shipping) / (1 - referralRate - targetMargin);
+
+      if (avgPrice < mvp) {
+        const gap = Math.ceil(mvp - avgPrice);
+        recommendations.push({
+          id: `rec_pricing_floor_${s.sku.toLowerCase()}`,
+          type: 'warning',
+          category: 'margin',
+          title: `Pricing Floor Violation: ${s.sku}`,
+          metric: `Selling Price: ₹${avgPrice.toFixed(0)} vs Minimum Viable Price (MVP): ₹${Math.ceil(mvp)}`,
+          description: `Product "${s.name}" is selling below the minimum price required to sustain a healthy 15% net margin once COGS, packaging, closing fees, and logistics are accounted for.`,
+          action: `Increase listing price by +₹${gap} (to ₹${Math.ceil(mvp)}) to restore target 15% bottom-line margin.`,
+          impact: 'medium',
           marketplace: s.azOrders > s.fkOrders ? 'amazon' : (s.fkOrders > s.azOrders ? 'flipkart' : 'both'),
           affectedSkus: [s.sku]
         });

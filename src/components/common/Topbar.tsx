@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Menu, UploadCloud } from 'lucide-react';
+import { Menu, UploadCloud, Sliders } from 'lucide-react';
 import { useFilters } from '../../hooks/useFilters';
 import type { PlatformFilter, DatePresetFilter } from '../../hooks/useFilters';
 import { Button } from '../ui/Button';
 import { ReportUploadModal } from '../importer/ReportUploadModal';
+import { CogsManagerModal } from '../catalog/CogsManagerModal';
 import { useSellerData } from '../../hooks/useSellerData';
 
 interface TopbarProps {
@@ -13,7 +14,8 @@ interface TopbarProps {
 export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
   const { platform, preset, startDate, endDate, setFilters } = useFilters();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const { hasImportedData, reloadData } = useSellerData();
+  const [isCogsModalOpen, setIsCogsModalOpen] = useState(false);
+  const { orders, hasImportedData, reloadData } = useSellerData();
 
   const handlePlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilters({ platform: e.target.value as PlatformFilter });
@@ -99,6 +101,18 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
           </div>
         )}
 
+        {/* Manage SKU COGS Button */}
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setIsCogsModalOpen(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '6px 12px' }}
+        >
+          <Sliders size={14} />
+          <span>COGS</span>
+        </Button>
+
         {/* Import Report Button */}
         <Button
           type="button"
@@ -130,6 +144,12 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
         onImportSuccess={() => {
           reloadData();
         }}
+      />
+
+      <CogsManagerModal
+        isOpen={isCogsModalOpen}
+        onClose={() => setIsCogsModalOpen(false)}
+        orders={orders}
       />
     </header>
   );

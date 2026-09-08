@@ -56,6 +56,7 @@
 ## server/validation/testImportValidation.ts — Automated test validation suite for Seller Report Importer, Amazon MTR, and Flipkart Sales normalizers.
 ## server/validation/testStorageValidation.ts — Automated test validation suite for IndexedDB report storage, deduplication, and batch management.
 ## server/validation/testPhase6EFValidation.ts — Automated test validation suite verifying Indian regional state mapping, dual-marketplace comparison metrics, dynamic date anchoring, and recommendation engine rules.
+## server/validation/testProfitValidation.ts — Automated test validation suite for Master Catalog COGS persistence, CSV bulk import/export, 8-step waterfall statement accounting, bank settlement reconciliation, and Minimum Viable Price (MVP) floor pricing rules.
 
 ## src/ — Client-side React application source code
 ## src/main.tsx — Application bootstrap mounting the App component into the root DOM element with StrictMode.
@@ -66,7 +67,7 @@
 ## src/components/common/ — Reusable application shell and structural layout components
 ## src/components/common/Layout.tsx — Main dashboard shell providing the responsive sidebar, topbar, ambient DataModeBanner, and outlet container.
 ## src/components/common/Sidebar.tsx — Collapsible navigation sidebar containing navigation links and mobile drawer backdrop.
-## src/components/common/Topbar.tsx — Top navigation header housing global filters (platform, date preset, custom dates), report upload launcher, and menu toggle.
+## src/components/common/Topbar.tsx — Top navigation header housing global filters (platform, date preset, custom dates), COGS manager launcher, report upload launcher, and menu toggle.
 ## src/components/common/PageHeader.tsx — Standard page heading component displaying page title, subtitle, and action buttons.
 ## src/components/common/DataModeBanner.tsx — Ambient state banner indicating Demo Mode (with upload CTA) vs Live Mode (with batch counters, order counts, batch manager, and demo toggle).
 
@@ -79,6 +80,9 @@
 ## src/components/importer/ReportDropzone.tsx — Drag-and-drop file ingestion zone with real-time parsing state.
 ## src/components/importer/ReportImportPreview.tsx — Diagnostic report preview displaying KPI strips, sample order rows, and warning accordions.
 ## src/components/importer/ReportUploadModal.tsx — Accessible modal dialog hosting report upload dropzone, preview, and batch management.
+## src/components/catalog/CogsManagerModal.tsx — Modal dialog for managing SKU unit costs (manufacturing COGS, packaging, GST rate), inline editing, unconfigured SKU detection, and CSV bulk import/export.
+## src/components/profit/SettlementReconciliationCard.tsx — Bank disbursement audit component reconciling estimated fees against actual debited settlement fees to identify hidden overcharges.
+## src/components/profit/UnitEconomicsTable.tsx — Diagnostic module isolating unprofitable SKUs (profit-killers), severe RTO reverse logistics drag, and Minimum Viable Price (MVP) floor pricing.
 
 ## src/pages/ — Primary dashboard page views
 ## src/pages/Overview.tsx — Executive dashboard displaying high-level KPI cards, tactical recommendations engine, revenue charts, recent orders, and category breakdowns.
@@ -86,22 +90,25 @@
 ## src/pages/Sales.tsx — Multi-channel sales timeline with platform toggling ("All", "Amazon", "Flipkart"), daily transaction history, and 5-zone Indian regional demand distribution.
 ## src/pages/Products.tsx — Product catalog performance ranking SKUs by revenue, units, profit margins, and marketplace distribution.
 ## src/pages/Orders.tsx — Searchable and filterable transaction log supporting status, platform, pagination, customer location, and net profitability calculations.
-## src/pages/Profit.tsx — Accounting waterfall P&L statement breaking down gross revenue, COGS, marketplace referral/closing fees, shipping expenses, and net take-home profit.
+## src/pages/Profit.tsx — Itemized 8-step financial waterfall accounting statement (Gross Sales -> Refunds -> Net Sales -> COGS/Packaging -> Commissions -> Logistics/RTO -> Taxes -> Net Operating Profit), CSV statement export, settlement audit, and unit economics.
 ## src/pages/MarketplacePerformance.tsx — Marketplace analytics view comparing traffic, sessions, conversion, buy box, and unit metrics.
 
 ## src/hooks/ — Custom React state and lifecycle hooks
 ## src/hooks/useFilters.ts — Synchronizes platform and date preset filters with URL search parameters.
 ## src/hooks/useSellerData.ts — Reactive hook providing persisted seller orders or mock data fallback to dashboard components.
+## src/hooks/useSkuCosts.ts — Reactive hook providing persisted SKU costs, sync lookup map, and bulk update functions.
 
 ## src/models/ — TypeScript domain models and interface contracts
-## src/models/analytics.ts — Data interfaces for KPI cards, daily sales aggregates, and platform financial summaries.
+## src/models/analytics.ts — Data interfaces for KPI cards, daily sales aggregates, platform financial summaries, and itemized direct costs.
 ## src/models/marketplaceReport.ts — Data models for normalized daily marketplace metrics and raw report structures.
 ## src/models/order.ts — Domain interface representing customer order records and statuses.
 ## src/models/product.ts — Domain interface representing product catalog items and profitability metrics.
 
 ## src/services/ — Client business logic and data aggregation services
-## src/services/analyticsService.ts — Computes financial summaries, margins, profit & loss, Indian regional distributions, marketplace comparison metrics, and timelines from live or mock orders with dynamic date anchoring.
-## src/services/recommendations/recommendationEngine.ts — Pure tactical recommendation engine evaluating high return rates, margin erosion, unprofitable SKUs, cross-channel margin arbitrage, catalog revenue concentration, and fulfillment disparity.
+## src/services/analyticsService.ts — Computes financial summaries, margins, profit & loss, Indian regional distributions, marketplace comparison metrics, and timelines from live or mock orders with dynamic date anchoring and direct COGS/packaging deductions.
+## src/services/recommendations/recommendationEngine.ts — Pure tactical recommendation engine evaluating high return rates, margin erosion, unprofitable SKUs, cross-channel margin arbitrage, catalog revenue concentration, fulfillment disparity, and pricing floor violations.
+## src/services/catalog/cogsService.ts — Master Catalog and COGS management service backed by IndexedDB and sync cache, with PRODUCTS_CATALOG seeding and CSV parsers.
+## src/services/settlement/settlementService.ts — Settlement report ingestion bridge for Amazon Date Range Financial files and Flipkart Settlement sheets, with discrepancy reconciliation.
 ## src/services/marketplaceReportService.ts — Coordinates retrieval of normalized performance metrics from backend API or local report fallbacks.
 ## src/services/marketplaceApiService.ts — Client API service fetching Amazon performance metrics with shape validation guards.
 ## src/services/marketplaceImportService.ts — Manages client-side report uploads, parsing, validation, and localStorage persistence.
@@ -147,3 +154,9 @@ To deliver persistent multi-report capabilities, Phase 6C & 6D introduces `src/s
 Phase 6E and Phase 6F complete the analytics loop:
 - **Phase 6E (Unified Dual-Marketplace Integration)**: Connects `useSellerData().orders` as the universal single data source across all dashboard views (`Overview`, `Marketplace`, `Sales`, `Products`, `Orders`, `Profit`). Implements ambient `DataModeBanner` (providing clear Demo Mode indicator with upload CTA vs Live Mode indicator with batch counts, order totals, and demo toggle). Upgrades `analyticsService.ts` with dynamic date anchoring (basing `7d`/`30d`/`ytd` on the latest order timestamp in uploaded datasets), side-by-side marketplace comparison metrics (`getMarketplaceComparison`), and Indian regional demand aggregation (`getRegionalDistribution`) mapping 28+ states and union territories into 5 geographical zones (North, South, West, East, Central).
 - **Phase 6F (Tactical Seller Recommendations Engine)**: Introduces `src/services/recommendations/recommendationEngine.ts` and `src/components/recommendations/RecommendationsCard.tsx`, a pure-function diagnostic engine evaluating blended and platform metrics against marketplace commission structures. It flags critical return anomalies, thin margin warnings, unprofitable SKUs, cross-channel margin arbitrage opportunities, catalog revenue concentration risks, and marketplace fee drags, providing concrete operational guidance directly to sellers on the dashboard.
+
+Phase 7 completes true bottom-line profitability accounting:
+- **Phase 7A (Master Catalog & COGS Management Layer)**: Introduces `src/services/catalog/cogsService.ts`, `src/hooks/useSkuCosts.ts`, and `src/components/catalog/CogsManagerModal.tsx` storing SKU manufacturing COGS, packaging material expenses, and GST tax rates in IndexedDB (seeded from `PRODUCTS_CATALOG`). It features inline editing, unconfigured SKU auto-discovery from uploaded reports, and CSV bulk import/export.
+- **Phase 7B (Deep Profit Waterfall Breakdown)**: Upgrades `src/services/analyticsService.ts` and transforms `src/pages/Profit.tsx` into an itemized 8-step financial accounting waterfall (Gross Customer Sales -> Customer Returns -> Net Realized Sales -> COGS & Packaging -> Marketplace Deductions -> Logistics & RTO Losses -> Output Taxes -> Real Net Operating Profit) with exportable CSV financial statements.
+- **Phase 7C (Settlement & Disbursement Reconciliation)**: Introduces `src/services/settlement/settlementService.ts` and `src/components/profit/SettlementReconciliationCard.tsx` supporting Amazon Date Range Financial files and Flipkart Settlement sheets, auditing estimated order fees against actual bank disbursements to flag hidden overcharges (weight handling surcharges, return pick & pack penalties).
+- **Phase 7D (Unit Economics & Profit-Killers Module)**: Introduces `src/components/profit/UnitEconomicsTable.tsx` isolating unprofitable SKUs (profit-killers), severe RTO reverse logistics drag, and a Minimum Viable Price ($MVP$) pricing floor calculator targeting a 15% net margin. Upgrades `src/services/recommendations/recommendationEngine.ts` with rules flagging negative unit economics, pricing floor violations, and severe RTO drag.

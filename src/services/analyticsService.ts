@@ -5,6 +5,7 @@ import type { Order } from '../models/order';
 import type { Product } from '../models/product';
 import type { OverviewMetrics, PlatformBreakdown, FinancialSummary, DailyChartMetric } from '../models/analytics';
 import type { PlatformFilter, DatePresetFilter } from '../hooks/useFilters';
+import { getSkuCostsSync, type SkuCost } from './catalog/cogsService';
 
 // -------------------------------------------------------------
 // Date Utility Helpers
@@ -139,15 +140,19 @@ export function calculateFinancialSummary(
   orders: Order[],
   start: Date,
   end: Date,
-  platform: PlatformFilter
+  platform: PlatformFilter,
+  skuCostsMap?: Map<string, SkuCost>
 ): FinancialSummary {
   const activeOrders = orders.filter(o => {
     // 1. Platform Filter
-    if (platform !== 'all' && o.platform !== platform) return false;
-    // 2. Date Filter
-    const oDate = new Date(o.orderDate);
+    if (platform !== 'all' && o.platform !== platform && o.marketplace !== platform) return false;
+    // 2. Date Filter (handle orderDate or date)
+    const rawDate = o.orderDate || o.date || '';
+    const oDate = new Date(rawDate);
     return oDate >= start && oDate <= end;
   });
+
+  const costCatalog = skuCostsMap || getSkuCostsSync();
 
   let grossRevenue = 0;
   let refundedValue = 0;
@@ -156,6 +161,8 @@ export function calculateFinancialSummary(
   let cancelledOrderCount = 0;
   let unitsSold = 0;
   let cogs = 0;
+  let packagingCost = 0;
+  let taxes = 0;
   let marketplaceFees = 0;
   let shipping = 0;
   let returnRelatedCosts = 0;
@@ -166,37 +173,66 @@ export function calculateFinancialSummary(
       return; // Skip cancellations for all sales/expense metrics
     }
 
-    // Find core product pricing metadata
-    const prodMeta = PRODUCTS_CATALOG.find(p => p.id === o.productId);
-    const costPrice = prodMeta ? prodMeta.costPrice : 0;
+    const val = o.gross_amount || o.orderValue || 0;
+    const qty = o.quantity || 1;
+    const sku = (o.sku || '').trim().toLowerCase();
+
+    // Look up in COGS catalog first, fallback to PRODUCTS_CATALOG
+    const skuEntry = costCatalog.get(sku);
+    let costPrice = 0;
+    let pkgCost = 0;
+    let taxRate = 18;
+
+    if (skuEntry) {
+      costPrice = skuEntry.cogs;
+      pkgCost = skuEntry.packagingCost;
+      taxRate = skuEntry.taxRate;
+    } else {
+      const prodMeta = PRODUCTS_CATALOG.find(p => p.id === o.productId || p.sku.toLowerCase() === sku);
+      if (prodMeta) {
+        costPrice = prodMeta.costPrice;
+        pkgCost = 25;
+      }
+    }
 
     // Accumulate active sales/volume metrics
-    grossRevenue += o.orderValue;
+    grossRevenue += val;
     orderCount += 1;
-    unitsSold += o.quantity;
-    cogs += costPrice * o.quantity;
+    unitsSold += qty;
+    cogs += costPrice * qty;
+    packagingCost += pkgCost * qty;
 
     // Platform configurations
-    const platformKey = o.platform === 'amazon' ? 'amazon' : 'flipkart';
-    const platformConfig = MARKETPLACE_CONFIG[platformKey];
+    const plat = (o.marketplace || o.platform) === 'amazon' ? 'amazon' : 'flipkart';
+    const platformConfig = MARKETPLACE_CONFIG[plat];
 
-    // Marketplace commission fee + fixed closing fee
-    marketplaceFees += (o.orderValue * platformConfig.referralFeeRate) + platformConfig.fixedClosingFee;
-    
-    // Shipping charges
-    shipping += platformConfig.flatShippingRate;
+    // Marketplace fees: use estimatedFees if normalized, otherwise formula
+    const orderFees = o.estimatedFees?.totalFees !== undefined
+      ? o.estimatedFees.totalFees
+      : ((val * platformConfig.referralFeeRate) + platformConfig.fixedClosingFee);
+    marketplaceFees += orderFees;
+
+    // Shipping charges: use shipping_fee if normalized, otherwise flat rate
+    shipping += (o.shipping_fee !== undefined ? o.shipping_fee : platformConfig.flatShippingRate);
+
+    // Taxes
+    if (o.tax_amount !== undefined && o.tax_amount > 0) {
+      taxes += o.tax_amount;
+    } else {
+      taxes += (val * (taxRate / (100 + taxRate)));
+    }
 
     // Returned orders treatment
     if (o.status === 'returned') {
       returnedOrderCount += 1;
-      refundedValue += o.orderValue; // Customers are refunded the order value
+      refundedValue += val; // Customers are refunded the order value
 
       const retConfig = MARKETPLACE_CONFIG.returns;
       const reverseShipping = retConfig.flatReturnShipping;
       const reverseProcessing = retConfig.reverseProcessingFee;
       
       // Damage write-off = write-off percentage * COGS
-      const itemCost = costPrice * o.quantity;
+      const itemCost = costPrice * qty;
       const damageLoss = itemCost * retConfig.writeOffPercentage;
 
       returnRelatedCosts += reverseShipping + reverseProcessing + damageLoss;
@@ -216,7 +252,8 @@ export function calculateFinancialSummary(
 
   // Derived metrics
   const netSales = grossRevenue - refundedValue;
-  const netProfit = netSales - cogs - marketplaceFees - shipping - advertising - returnRelatedCosts;
+  const totalDirectCosts = cogs + packagingCost;
+  const netProfit = netSales - totalDirectCosts - marketplaceFees - shipping - advertising - returnRelatedCosts;
   const profitMargin = grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0;
   const aov = orderCount > 0 ? grossRevenue / orderCount : 0;
   const returnRate = orderCount > 0 ? (returnedOrderCount / orderCount) * 100 : 0;
@@ -230,6 +267,9 @@ export function calculateFinancialSummary(
     cancelledOrderCount,
     unitsSold,
     cogs,
+    packagingCost,
+    totalDirectCosts,
+    taxes,
     marketplaceFees,
     shipping,
     advertising,
