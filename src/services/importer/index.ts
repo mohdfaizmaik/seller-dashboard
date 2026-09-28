@@ -9,3 +9,9 @@ export {
   cleanSku,
   type NormalizeFlipkartSalesResult
 } from './normalizers/flipkartNormalizer';
+export {
+  normalizeMeeshoOrders,
+  parseMeeshoDate,
+  type NormalizeMeeshoResult
+} from './normalizers/meeshoNormalizer';
+

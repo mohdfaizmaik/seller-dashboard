@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Menu, UploadCloud, Sliders } from 'lucide-react';
+import { Menu, UploadCloud, Sliders, Sparkles } from 'lucide-react';
 import { useFilters } from '../../hooks/useFilters';
 import type { PlatformFilter, DatePresetFilter } from '../../hooks/useFilters';
 import { Button } from '../ui/Button';
 import { ReportUploadModal } from '../importer/ReportUploadModal';
 import { CogsManagerModal } from '../catalog/CogsManagerModal';
 import { useSellerData } from '../../hooks/useSellerData';
+import { useCopilot } from '../../context/CopilotContext';
 
 interface TopbarProps {
   onMenuToggle: () => void;
@@ -16,6 +17,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isCogsModalOpen, setIsCogsModalOpen] = useState(false);
   const { orders, hasImportedData, reloadData } = useSellerData();
+  const { openCopilot } = useCopilot();
 
   const handlePlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilters({ platform: e.target.value as PlatformFilter });
@@ -62,6 +64,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
           <option value="all">All Platforms</option>
           <option value="amazon">Amazon</option>
           <option value="flipkart">Flipkart</option>
+          <option value="meesho">Meesho</option>
         </select>
 
         {/* Date Ranges Quick Select Presets */}
@@ -100,6 +103,26 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
             />
           </div>
         )}
+
+        {/* AI Copilot Button */}
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => openCopilot()}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            padding: '6px 12px',
+            borderColor: 'rgba(99, 102, 241, 0.4)',
+            color: '#a5b4fc'
+          }}
+        >
+          <Sparkles size={14} style={{ color: 'var(--color-primary)' }} />
+          <span>AI Copilot</span>
+        </Button>
 
         {/* Manage SKU COGS Button */}
         <Button

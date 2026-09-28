@@ -13,11 +13,11 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
   return (
     <div
       style={{
-        background: 'var(--bg-surface, #ffffff)',
+        background: 'var(--bg-surface)',
         borderRadius: '12px',
-        border: '1px solid var(--border-color, #e2e8f0)',
+        border: '1px solid var(--border-color)',
         overflow: 'hidden',
-        boxShadow: 'var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05))',
+        boxShadow: 'var(--shadow-sm)',
         display: 'flex',
         flexDirection: 'column'
       }}
@@ -26,7 +26,7 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
       <div
         style={{
           padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid var(--border-color, #e2e8f0)',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -51,9 +51,9 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
                 gap: '0.35rem',
                 fontSize: '0.8rem',
                 fontWeight: 600,
-                color: '#b91c1c',
-                background: '#fef2f2',
-                border: '1px solid #fecaca',
+                color: '#f87171',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
                 padding: '0.3rem 0.65rem',
                 borderRadius: '6px'
               }}
@@ -69,9 +69,9 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
                 gap: '0.35rem',
                 fontSize: '0.8rem',
                 fontWeight: 600,
-                color: '#15803d',
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
+                color: '#34d399',
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
                 padding: '0.3rem 0.65rem',
                 borderRadius: '6px'
               }}
@@ -92,8 +92,8 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
             gap: '1rem',
             padding: '1rem',
             borderRadius: '10px',
-            background: 'var(--bg-secondary, #f8fafc)',
-            border: '1px solid var(--border-color, #e2e8f0)'
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)'
           }}
         >
           <div>
@@ -109,34 +109,34 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
           </div>
 
           <div>
-            <div style={{ fontSize: '0.78rem', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: '0.78rem', color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Active Working Capital
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#15803d', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#34d399', marginTop: '0.2rem' }}>
               {formatINR(summary.activeCapital)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#16a34a' }}>
+            <div style={{ fontSize: '0.75rem', color: '#10b981' }}>
               {formatPercent(activePercent)} of total assets (healthy turnover)
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.78rem', color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: '0.78rem', color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Trapped in Dead / Stagnant Stock
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#b91c1c', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 700, color: '#f87171', marginTop: '0.2rem' }}>
               {formatINR(summary.lockedDeadCapital)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#dc2626' }}>
+            <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>
               {formatPercent(deadPercent)} of working capital locked
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--color-primary, #2563eb)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Restock Reorder Requirement
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--color-primary, #2563eb)', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--color-primary)', marginTop: '0.2rem' }}>
               {formatINR(summary.totalReorderPoValue)}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -148,10 +148,10 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
         {/* Visual Capital Allocation Progress Bar */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
-            <span style={{ fontWeight: 600, color: '#15803d' }}>
+            <span style={{ fontWeight: 600, color: '#34d399' }}>
               Active Capital: {formatPercent(activePercent)}
             </span>
-            <span style={{ fontWeight: 600, color: summary.lockedDeadCapital > 0 ? '#b91c1c' : '#64748b' }}>
+            <span style={{ fontWeight: 600, color: summary.lockedDeadCapital > 0 ? '#f87171' : 'var(--text-muted)' }}>
               Trapped Capital: {formatPercent(deadPercent)}
             </span>
           </div>
@@ -159,7 +159,7 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
             style={{
               height: '10px',
               borderRadius: '9999px',
-              background: '#e2e8f0',
+              background: '#1f2937',
               overflow: 'hidden',
               display: 'flex'
             }}
@@ -197,9 +197,9 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
               style={{
                 padding: '1.5rem',
                 borderRadius: '8px',
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
-                color: '#166534',
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                color: '#34d399',
                 fontSize: '0.88rem',
                 textAlign: 'center'
               }}
@@ -214,8 +214,8 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
                   style={{
                     padding: '1rem',
                     borderRadius: '8px',
-                    border: '1px solid var(--border-color, #e2e8f0)',
-                    background: 'var(--bg-main, #ffffff)',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-surface)',
                     display: 'flex',
                     flexWrap: 'wrap',
                     justifyContent: 'space-between',
@@ -234,9 +234,9 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
                           fontWeight: 700,
                           padding: '0.15rem 0.5rem',
                           borderRadius: '4px',
-                          background: item.urgency === 'DEAD_STOCK' ? '#f1f5f9' : '#f5f3ff',
-                          color: item.urgency === 'DEAD_STOCK' ? '#475569' : '#6d28d9',
-                          border: `1px solid ${item.urgency === 'DEAD_STOCK' ? '#cbd5e1' : '#ddd6fe'}`
+                          background: item.urgency === 'DEAD_STOCK' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(139, 92, 246, 0.12)',
+                          color: item.urgency === 'DEAD_STOCK' ? '#f87171' : '#c4b5fd',
+                          border: `1px solid ${item.urgency === 'DEAD_STOCK' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`
                         }}
                       >
                         {item.urgency === 'DEAD_STOCK' ? 'DEAD STOCK' : 'OVERSTOCKED'}
@@ -255,12 +255,12 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
 
                     <div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Locked Capital</div>
-                      <div style={{ fontWeight: 700, color: '#b91c1c' }}>{formatINR(item.lockedValue)}</div>
+                      <div style={{ fontWeight: 700, color: '#f87171' }}>{formatINR(item.lockedValue)}</div>
                     </div>
 
                     <div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Runway (DOI)</div>
-                      <div style={{ fontWeight: 600, color: '#64748b' }}>
+                      <div style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
                         {item.doi >= 999 ? '>120 days' : `${item.doi.toFixed(0)} days`}
                       </div>
                     </div>
@@ -272,7 +272,8 @@ export const WorkingCapitalCard: React.FC<WorkingCapitalCardProps> = ({ summary 
                       marginTop: '0.25rem',
                       padding: '0.6rem 0.85rem',
                       borderRadius: '6px',
-                      background: 'var(--bg-secondary, #f8fafc)',
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
                       borderLeft: '3px solid #8b5cf6',
                       fontSize: '0.82rem',
                       color: 'var(--text-secondary)'

@@ -23,18 +23,52 @@ export const Marketplace: React.FC = () => {
 
   const { start, end } = getDateRangeFromPreset(preset, startDate, endDate, orders);
   const comparison = getMarketplaceComparison(orders, start, end);
-  const { amazon, flipkart, blended } = comparison;
+  const { amazon, flipkart, meesho, blended } = comparison;
 
-  const getWinner = (val1: number, val2: number, higherIsBetter = true) => {
-    if (val1 === val2) return 'tie';
-    if (higherIsBetter) return val1 > val2 ? 'amazon' : 'flipkart';
-    return val1 < val2 ? 'amazon' : 'flipkart';
+  type PlatformKey = 'amazon' | 'flipkart' | 'meesho';
+
+  const getChannelLeader = (
+    candidates: { key: PlatformKey; label: string; value: number }[],
+    higherIsBetter = true
+  ): { key: PlatformKey; label: string; value: number } | 'tie' => {
+    const valid = candidates.filter((c) => c.value !== undefined && !isNaN(c.value));
+    if (valid.length === 0) return 'tie';
+    const sorted = [...valid].sort((a, b) =>
+      higherIsBetter ? b.value - a.value : a.value - b.value
+    );
+    if (sorted.length > 1 && sorted[0].value === sorted[1].value) return 'tie';
+    return sorted[0];
   };
 
-  const revenueWinner = getWinner(amazon.grossRevenue, flipkart.grossRevenue);
-  const marginWinner = getWinner(amazon.profitMargin, flipkart.profitMargin);
-  const returnWinner = getWinner(amazon.returnRate, flipkart.returnRate, false);
-  const aovWinner = getWinner(amazon.aov, flipkart.aov);
+  const revenueLeader = getChannelLeader([
+    { key: 'amazon', label: 'Amazon', value: amazon.grossRevenue },
+    { key: 'flipkart', label: 'Flipkart', value: flipkart.grossRevenue },
+    { key: 'meesho', label: 'Meesho', value: meesho.grossRevenue }
+  ]);
+
+  const marginLeader = getChannelLeader([
+    { key: 'amazon', label: 'Amazon', value: amazon.profitMargin },
+    { key: 'flipkart', label: 'Flipkart', value: flipkart.profitMargin },
+    { key: 'meesho', label: 'Meesho', value: meesho.profitMargin }
+  ]);
+
+  const returnLeader = getChannelLeader([
+    { key: 'amazon', label: 'Amazon', value: amazon.returnRate },
+    { key: 'flipkart', label: 'Flipkart', value: flipkart.returnRate },
+    { key: 'meesho', label: 'Meesho', value: meesho.returnRate }
+  ], false);
+
+  const aovLeader = getChannelLeader([
+    { key: 'amazon', label: 'Amazon', value: amazon.aov },
+    { key: 'flipkart', label: 'Flipkart', value: flipkart.aov },
+    { key: 'meesho', label: 'Meesho', value: meesho.aov }
+  ]);
+
+  const unitsLeader = getChannelLeader([
+    { key: 'amazon', label: 'Amazon', value: amazon.unitsSold },
+    { key: 'flipkart', label: 'Flipkart', value: flipkart.unitsSold },
+    { key: 'meesho', label: 'Meesho', value: meesho.unitsSold }
+  ]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -42,7 +76,7 @@ export const Marketplace: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <PageHeader
           title="Marketplace Performance & Comparison"
-          subtitle="Side-by-side contrast of sales, unit economics, fee structures, and return rates across Amazon & Flipkart"
+          subtitle="Side-by-side contrast of sales, unit economics, fee structures, and return rates across Amazon, Flipkart & Meesho"
         />
 
         <div className="flex items-center gap-1 p-1 rounded-lg self-start sm:self-auto" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
@@ -59,7 +93,7 @@ export const Marketplace: React.FC = () => {
             }}
           >
             <Scale size={14} />
-            Dual-Marketplace Contrast
+            Tri-Marketplace Contrast
           </button>
 
           <button
@@ -85,7 +119,7 @@ export const Marketplace: React.FC = () => {
       ) : (
         <>
           {/* Executive Comparison Summary Cards */}
-          <div className="dashboard-grid">
+          <div className="kpi-grid">
             {/* Amazon Summary Card */}
             <Card style={{ borderTop: '4px solid #FF9900' }}>
               <CardHeader className="flex items-center justify-between">
@@ -190,6 +224,58 @@ export const Marketplace: React.FC = () => {
               </CardBody>
             </Card>
 
+            {/* Meesho Summary Card */}
+            <Card style={{ borderTop: '4px solid #F43397' }}>
+              <CardHeader className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant="meesho" size="sm">
+                    Meesho
+                  </Badge>
+                  <span className="text-2xs" style={{ color: 'var(--text-muted)' }}>
+                    Orders Report / 0% Comm
+                  </span>
+                </div>
+                <span className="font-semibold text-xs" style={{ color: '#F43397' }}>
+                  {meesho.orderCount} Orders
+                </span>
+              </CardHeader>
+              <CardBody className="flex flex-col gap-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Gross Revenue</span>
+                  <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {formatINR(meesho.grossRevenue)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2" style={{ borderTop: '1px solid var(--border-color)' }}>
+                  <div>
+                    <span className="text-2xs" style={{ color: 'var(--text-muted)' }}>Net Profit</span>
+                    <p className="font-semibold text-sm" style={{ color: meesho.netProfit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                      {formatINR(meesho.netProfit)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-2xs" style={{ color: 'var(--text-muted)' }}>Net Margin</span>
+                    <p className="font-semibold text-sm" style={{ color: meesho.profitMargin >= 10 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                      {formatPercent(meesho.profitMargin)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-2xs" style={{ color: 'var(--text-muted)' }}>Return Rate</span>
+                    <p className="font-semibold text-sm" style={{ color: meesho.returnRate > 15 ? 'var(--color-danger)' : 'var(--text-primary)' }}>
+                      {formatPercent(meesho.returnRate)} ({meesho.returnedCount})
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-2xs" style={{ color: 'var(--text-muted)' }}>Avg Order Value</span>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                      {formatINR(meesho.aov)}
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
             {/* Combined Blended Summary Card */}
             <Card style={{ borderTop: '4px solid var(--color-primary)' }}>
               <CardHeader className="flex items-center justify-between">
@@ -248,7 +334,7 @@ export const Marketplace: React.FC = () => {
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Side-by-Side Operational Benchmarks</CardTitle>
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Comparing {amazon.orderCount} Amazon vs {flipkart.orderCount} Flipkart orders
+                Comparing Amazon ({amazon.orderCount}), Flipkart ({flipkart.orderCount}), and Meesho ({meesho.orderCount}) orders
               </span>
             </CardHeader>
             <CardBody className="p-0">
@@ -256,10 +342,11 @@ export const Marketplace: React.FC = () => {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th style={{ width: '30%' }}>Metric</th>
-                      <th style={{ width: '25%', color: '#FF9900' }}>Amazon India</th>
-                      <th style={{ width: '25%', color: '#2874F0' }}>Flipkart</th>
-                      <th style={{ width: '20%', textAlign: 'center' }}>Advantage</th>
+                      <th style={{ width: '22%' }}>Metric</th>
+                      <th style={{ width: '19%', color: '#FF9900' }}>Amazon India</th>
+                      <th style={{ width: '19%', color: '#2874F0' }}>Flipkart</th>
+                      <th style={{ width: '19%', color: '#F43397' }}>Meesho</th>
+                      <th style={{ width: '21%', textAlign: 'center' }}>Advantage / Leader</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -267,11 +354,11 @@ export const Marketplace: React.FC = () => {
                       <td className="font-medium text-sm">Gross Revenue</td>
                       <td className="font-semibold text-sm">{formatINR(amazon.grossRevenue)}</td>
                       <td className="font-semibold text-sm">{formatINR(flipkart.grossRevenue)}</td>
+                      <td className="font-semibold text-sm">{formatINR(meesho.grossRevenue)}</td>
                       <td style={{ textAlign: 'center' }}>
-                        {revenueWinner !== 'tie' ? (
-                          <Badge variant={revenueWinner === 'amazon' ? 'amazon' : 'flipkart'} size="sm">
-                            {revenueWinner === 'amazon' ? 'Amazon + ' : 'Flipkart + '}
-                            {formatINR(Math.abs(amazon.grossRevenue - flipkart.grossRevenue))}
+                        {revenueLeader !== 'tie' ? (
+                          <Badge variant={revenueLeader.key} size="sm">
+                            {revenueLeader.label} Leads ({formatINR(revenueLeader.value)})
                           </Badge>
                         ) : (
                           <Badge variant="neutral" size="sm">Parity</Badge>
@@ -283,10 +370,11 @@ export const Marketplace: React.FC = () => {
                       <td className="font-medium text-sm">Units Sold</td>
                       <td className="text-sm">{amazon.unitsSold.toLocaleString('en-IN')} units</td>
                       <td className="text-sm">{flipkart.unitsSold.toLocaleString('en-IN')} units</td>
+                      <td className="text-sm">{meesho.unitsSold.toLocaleString('en-IN')} units</td>
                       <td style={{ textAlign: 'center' }}>
-                        {amazon.unitsSold !== flipkart.unitsSold ? (
-                          <Badge variant={amazon.unitsSold > flipkart.unitsSold ? 'amazon' : 'flipkart'} size="sm">
-                            {amazon.unitsSold > flipkart.unitsSold ? 'Amazon' : 'Flipkart'} Leads
+                        {unitsLeader !== 'tie' ? (
+                          <Badge variant={unitsLeader.key} size="sm">
+                            {unitsLeader.label} ({unitsLeader.value.toLocaleString('en-IN')} units)
                           </Badge>
                         ) : (
                           <Badge variant="neutral" size="sm">Equal</Badge>
@@ -298,11 +386,11 @@ export const Marketplace: React.FC = () => {
                       <td className="font-medium text-sm">Average Order Value (AOV)</td>
                       <td className="text-sm">{formatINR(amazon.aov)}</td>
                       <td className="text-sm">{formatINR(flipkart.aov)}</td>
+                      <td className="text-sm">{formatINR(meesho.aov)}</td>
                       <td style={{ textAlign: 'center' }}>
-                        {aovWinner !== 'tie' ? (
-                          <Badge variant={aovWinner === 'amazon' ? 'amazon' : 'flipkart'} size="sm">
-                            {aovWinner === 'amazon' ? 'Amazon (+ ' : 'Flipkart (+ '}
-                            {formatINR(Math.abs(amazon.aov - flipkart.aov))})
+                        {aovLeader !== 'tie' ? (
+                          <Badge variant={aovLeader.key} size="sm">
+                            {aovLeader.label} ({formatINR(aovLeader.value)})
                           </Badge>
                         ) : (
                           <Badge variant="neutral" size="sm">Equal</Badge>
@@ -318,10 +406,13 @@ export const Marketplace: React.FC = () => {
                       <td className="text-sm font-semibold" style={{ color: flipkart.profitMargin >= 10 ? 'var(--color-success)' : 'var(--color-warning)' }}>
                         {formatPercent(flipkart.profitMargin)}
                       </td>
+                      <td className="text-sm font-semibold" style={{ color: meesho.profitMargin >= 10 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                        {formatPercent(meesho.profitMargin)}
+                      </td>
                       <td style={{ textAlign: 'center' }}>
-                        {marginWinner !== 'tie' ? (
-                          <Badge variant={marginWinner === 'amazon' ? 'amazon' : 'flipkart'} size="sm">
-                            {marginWinner === 'amazon' ? 'Amazon' : 'Flipkart'} (+{Math.abs(amazon.profitMargin - flipkart.profitMargin).toFixed(1)}%)
+                        {marginLeader !== 'tie' ? (
+                          <Badge variant={marginLeader.key} size="sm">
+                            {marginLeader.label} ({formatPercent(marginLeader.value)})
                           </Badge>
                         ) : (
                           <Badge variant="neutral" size="sm">Equal</Badge>
@@ -332,15 +423,18 @@ export const Marketplace: React.FC = () => {
                     <tr>
                       <td className="font-medium text-sm">Customer Return Rate</td>
                       <td className="text-sm" style={{ color: amazon.returnRate > 15 ? 'var(--color-danger)' : 'var(--text-primary)' }}>
-                        {formatPercent(amazon.returnRate)} ({amazon.returnedCount} returned)
+                        {formatPercent(amazon.returnRate)} ({amazon.returnedCount} ret)
                       </td>
                       <td className="text-sm" style={{ color: flipkart.returnRate > 15 ? 'var(--color-danger)' : 'var(--text-primary)' }}>
-                        {formatPercent(flipkart.returnRate)} ({flipkart.returnedCount} returned)
+                        {formatPercent(flipkart.returnRate)} ({flipkart.returnedCount} ret)
+                      </td>
+                      <td className="text-sm" style={{ color: meesho.returnRate > 15 ? 'var(--color-danger)' : 'var(--text-primary)' }}>
+                        {formatPercent(meesho.returnRate)} ({meesho.returnedCount} ret)
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        {returnWinner !== 'tie' ? (
-                          <Badge variant={returnWinner === 'amazon' ? 'amazon' : 'flipkart'} size="sm">
-                            {returnWinner === 'amazon' ? 'Amazon Lower Returns' : 'Flipkart Lower Returns'}
+                        {returnLeader !== 'tie' ? (
+                          <Badge variant={returnLeader.key} size="sm">
+                            {returnLeader.label} ({formatPercent(returnLeader.value)} lowest)
                           </Badge>
                         ) : (
                           <Badge variant="neutral" size="sm">Equal</Badge>
@@ -352,6 +446,7 @@ export const Marketplace: React.FC = () => {
                       <td className="font-medium text-sm">Cancellation Count</td>
                       <td className="text-sm">{amazon.cancelledCount} cancelled</td>
                       <td className="text-sm">{flipkart.cancelledCount} cancelled</td>
+                      <td className="text-sm">{meesho.cancelledCount} cancelled</td>
                       <td style={{ textAlign: 'center' }}>
                         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                           Excluded from revenue
@@ -363,10 +458,11 @@ export const Marketplace: React.FC = () => {
                       <td className="font-medium text-sm">Estimated Marketplace Fees</td>
                       <td className="text-sm">{formatINR(amazon.marketplaceFees)}</td>
                       <td className="text-sm">{formatINR(flipkart.marketplaceFees)}</td>
+                      <td className="text-sm">{formatINR(meesho.marketplaceFees)}</td>
                       <td style={{ textAlign: 'center' }}>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                          15% + ₹20 (Az) vs 12% + ₹15 (Fk)
-                        </span>
+                        <Badge variant="meesho" size="sm">
+                          Meesho 0% Commission
+                        </Badge>
                       </td>
                     </tr>
                   </tbody>

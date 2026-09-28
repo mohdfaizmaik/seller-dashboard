@@ -1,9 +1,9 @@
 /**
- * Meesho marketplace adapter — placeholder only (Phase 4E).
+ * Meesho marketplace adapter — placeholder for live REST/GraphQL API integration.
  *
- * Integration is NOT implemented.
- * Do NOT invent Meesho report columns, API fields, or fake performance data.
- * Real Meesho adapter work belongs in a later API-integration phase (backend).
+ * NOTE: Offline report CSV/TSV ingestion and 0% commission analytics for Meesho
+ * are fully implemented and supported in `src/services/importer/normalizers/meeshoNormalizer.ts`.
+ * Live seller portal sync will be added if Meesho releases open developer APIs.
  */
 
 import type { MarketplaceAdapter, MarketplaceRequestContext } from '../types';

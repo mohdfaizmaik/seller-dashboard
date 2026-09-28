@@ -93,9 +93,10 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
       <div
         className="modal-container"
         style={{
-          background: 'var(--bg-surface, #ffffff)',
+          background: 'var(--bg-surface)',
           borderRadius: '12px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          border: '1px solid var(--border-color)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
           width: '100%',
           maxWidth: '520px',
           overflow: 'hidden',
@@ -107,7 +108,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
         <div
           style={{
             padding: '1.25rem 1.5rem',
-            borderBottom: '1px solid var(--border-color, #e2e8f0)',
+            borderBottom: '1px solid var(--border-color)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
@@ -147,8 +148,9 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                 gap: '0.5rem',
                 padding: '0.75rem',
                 borderRadius: '6px',
-                background: '#fef2f2',
-                color: '#b91c1c',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#f87171',
                 fontSize: '0.85rem'
               }}
             >
@@ -165,8 +167,9 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                 gap: '0.5rem',
                 padding: '0.75rem',
                 borderRadius: '6px',
-                background: '#ecfdf5',
-                color: '#047857',
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#34d399',
                 fontSize: '0.85rem'
               }}
             >
@@ -189,7 +192,9 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                   width: '100%',
                   padding: '0.5rem 0.75rem',
                   borderRadius: '6px',
-                  border: '1px solid var(--border-color, #cbd5e1)',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
                   fontSize: '0.9rem',
                   outline: 'none'
                 }}
@@ -210,7 +215,9 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                   width: '100%',
                   padding: '0.5rem 0.75rem',
                   borderRadius: '6px',
-                  border: '1px solid var(--border-color, #cbd5e1)',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
                   fontSize: '0.9rem',
                   outline: 'none'
                 }}
@@ -224,8 +231,8 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
             style={{
               padding: '0.75rem 1rem',
               borderRadius: '8px',
-              background: 'var(--bg-secondary, #f8fafc)',
-              border: '1px solid var(--border-color, #e2e8f0)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
@@ -234,7 +241,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Net Available Sellable Stock:
             </span>
-            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: availableUnits > 0 ? 'var(--color-primary, #2563eb)' : '#dc2626' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: availableUnits > 0 ? 'var(--color-primary)' : '#f87171' }}>
               {availableUnits} units
             </span>
           </div>
@@ -253,7 +260,9 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                   width: '100%',
                   padding: '0.5rem 0.75rem',
                   borderRadius: '6px',
-                  border: '1px solid var(--border-color, #cbd5e1)',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
                   fontSize: '0.9rem',
                   outline: 'none'
                 }}
@@ -274,7 +283,9 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
                   width: '100%',
                   padding: '0.5rem 0.75rem',
                   borderRadius: '6px',
-                  border: '1px solid var(--border-color, #cbd5e1)',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
                   fontSize: '0.9rem',
                   outline: 'none'
                 }}
@@ -291,7 +302,7 @@ export const StockAdjustModal: React.FC<StockAdjustModalProps> = ({
               gap: '0.75rem',
               marginTop: '0.5rem',
               paddingTop: '1rem',
-              borderTop: '1px solid var(--border-color, #e2e8f0)'
+              borderTop: '1px solid var(--border-color)'
             }}
           >
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>

@@ -14,7 +14,7 @@ export interface Recommendation {
   description: string;
   action: string; // Concrete operational recommendation
   impact: 'high' | 'medium' | 'low';
-  marketplace: 'amazon' | 'flipkart' | 'both';
+  marketplace: 'amazon' | 'flipkart' | 'meesho' | 'both' | 'all';
   affectedSkus?: string[];
 }
 
@@ -51,6 +51,7 @@ export function generateRecommendations(
   // -------------------------------------------------------------
   const azOrders = orders.filter((o) => (o.marketplace || o.platform) === 'amazon');
   const fkOrders = orders.filter((o) => (o.marketplace || o.platform) === 'flipkart');
+  const meeshoOrders = orders.filter((o) => (o.marketplace || o.platform) === 'meesho');
 
   const calcPlatformStats = (platformOrders: Order[], cfg: typeof marketplaceConfigs.amazon) => {
     let gross = 0;
@@ -108,12 +109,13 @@ export function generateRecommendations(
 
   const azStats = calcPlatformStats(azOrders, marketplaceConfigs.amazon);
   const fkStats = calcPlatformStats(fkOrders, marketplaceConfigs.flipkart);
+  const meeshoStats = calcPlatformStats(meeshoOrders, marketplaceConfigs.meesho);
 
-  const totalGross = azStats.gross + fkStats.gross;
-  const totalFulfilled = azStats.fulfilledOrders + fkStats.fulfilledOrders;
-  const totalReturns = azStats.returns + fkStats.returns;
+  const totalGross = azStats.gross + fkStats.gross + meeshoStats.gross;
+  const totalFulfilled = azStats.fulfilledOrders + fkStats.fulfilledOrders + meeshoStats.fulfilledOrders;
+  const totalReturns = azStats.returns + fkStats.returns + meeshoStats.returns;
   const totalReturnRate = totalFulfilled > 0 ? (totalReturns / totalFulfilled) * 100 : 0;
-  const totalFees = azStats.fees + fkStats.fees;
+  const totalFees = azStats.fees + fkStats.fees + meeshoStats.fees;
 
   // SKU level statistics
   const costCatalog = skuCostsMap || getSkuCostsSync();
@@ -138,6 +140,9 @@ export function generateRecommendations(
       fkOrders: number;
       fkRevenue: number;
       fkProfit: number;
+      meeshoOrders: number;
+      meeshoRevenue: number;
+      meeshoProfit: number;
     }
   >();
 
@@ -153,7 +158,8 @@ export function generateRecommendations(
     const val = o.gross_amount || o.orderValue || 0;
     const qty = o.quantity || 1;
 
-    const plat = (o.marketplace || o.platform) === 'amazon' ? 'amazon' : 'flipkart';
+    const rawPlat = (o.marketplace || o.platform || '').toLowerCase();
+    const plat = rawPlat === 'meesho' ? 'meesho' : rawPlat === 'amazon' ? 'amazon' : 'flipkart';
     const cfg = marketplaceConfigs[plat];
     const fee = o.estimatedFees?.totalFees ?? ((val * cfg.referralFeeRate) + cfg.fixedClosingFee);
     const ship = o.shipping_fee ?? cfg.flatShippingRate;
@@ -177,7 +183,10 @@ export function generateRecommendations(
       azProfit: 0,
       fkOrders: 0,
       fkRevenue: 0,
-      fkProfit: 0
+      fkProfit: 0,
+      meeshoOrders: 0,
+      meeshoRevenue: 0,
+      meeshoProfit: 0
     };
 
     existing.orders += 1;
@@ -198,6 +207,10 @@ export function generateRecommendations(
       existing.azOrders += 1;
       existing.azRevenue += val;
       existing.azProfit += profit;
+    } else if (plat === 'meesho') {
+      existing.meeshoOrders += 1;
+      existing.meeshoRevenue += val;
+      existing.meeshoProfit += profit;
     } else {
       existing.fkOrders += 1;
       existing.fkRevenue += val;
@@ -236,6 +249,20 @@ export function generateRecommendations(
       action: 'Inspect product detail page sizing charts and images to eliminate customer expectation mismatches, and upgrade packaging to protect against transit damage.',
       impact: 'high',
       marketplace: 'amazon'
+    });
+  }
+
+  if (meeshoStats.fulfilledOrders >= 5 && meeshoStats.returnRate > 25) {
+    recommendations.push({
+      id: 'rec_returns_meesho_high',
+      type: 'danger',
+      category: 'returns',
+      title: 'Elevated COD / RTO Drag on Meesho',
+      metric: `Meesho Return Rate: ${meeshoStats.returnRate.toFixed(1)}% (${meeshoStats.returns} returns)`,
+      description: `High Cash on Delivery (COD) return and RTO rates are eroding Meesho's 0% commission advantage through repeated reverse logistics fees.`,
+      action: 'Implement phone number verification for COD orders, configure stricter RTO threshold filters, and prioritize prepaid incentives.',
+      impact: 'high',
+      marketplace: 'meesho'
     });
   }
 
@@ -416,6 +443,21 @@ export function generateRecommendations(
         marketplace: 'both'
       });
     }
+  }
+
+  // Meesho 0% Commission Arbitrage
+  if (meeshoStats.fulfilledOrders >= 3 && meeshoStats.margin > 15) {
+    recommendations.push({
+      id: 'rec_arbitrage_meesho_zero_fee',
+      type: 'opportunity',
+      category: 'channel_arbitrage',
+      title: 'Meesho 0% Commission Margin Arbitrage',
+      metric: `Meesho Margin: ${meeshoStats.margin.toFixed(1)}% vs 0% Referral Fee`,
+      description: `Zero percent referral and closing fees on Meesho produce superior unit profit retention compared to Amazon and Flipkart.`,
+      action: 'Expand catalog listings on Meesho for top-performing SKUs and optimize ad spend to capture price-sensitive tier-2/3 demand.',
+      impact: 'medium',
+      marketplace: 'meesho'
+    });
   }
 
   // -------------------------------------------------------------

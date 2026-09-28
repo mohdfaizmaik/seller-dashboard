@@ -9,6 +9,10 @@ import {
   Activity,
   Store,
   Boxes,
+  ReceiptText,
+  Target,
+  RotateCcw,
+  Wallet,
   X 
 } from 'lucide-react';
 
@@ -26,6 +30,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { path: '/orders', label: 'Order Management', icon: ShoppingCart },
     { path: '/profit', label: 'Profit & Expenses', icon: DollarSign },
     { path: '/inventory', label: 'Inventory & Stock', icon: Boxes },
+    { path: '/tax', label: 'GST & Compliance', icon: ReceiptText },
+    { path: '/advertising', label: 'Ad ROI & Marketing', icon: Target },
+    { path: '/returns', label: 'Returns & RTO Shield', icon: RotateCcw },
+    { path: '/cashflow', label: 'Cash Flow & Runway', icon: Wallet },
     { path: '/comparison', label: 'Platform Comparison', icon: Activity },
   ];
 

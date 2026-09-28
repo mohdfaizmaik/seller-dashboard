@@ -203,7 +203,9 @@ export function calculateFinancialSummary(
     packagingCost += pkgCost * qty;
 
     // Platform configurations
-    const plat = (o.marketplace || o.platform) === 'amazon' ? 'amazon' : 'flipkart';
+    const rawPlat = (o.marketplace || o.platform || '').toLowerCase();
+    const plat: 'amazon' | 'flipkart' | 'meesho' =
+      rawPlat === 'meesho' ? 'meesho' : rawPlat === 'amazon' ? 'amazon' : 'flipkart';
     const platformConfig = MARKETPLACE_CONFIG[plat];
 
     // Marketplace fees: use estimatedFees if normalized, otherwise formula
@@ -243,9 +245,15 @@ export function calculateFinancialSummary(
   const durationDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
   let advertising = 0;
   if (platform === 'all') {
-    advertising = durationDays * (MARKETPLACE_CONFIG.amazon.dailyAdBudget + MARKETPLACE_CONFIG.flipkart.dailyAdBudget);
+    advertising = durationDays * (
+      MARKETPLACE_CONFIG.amazon.dailyAdBudget +
+      MARKETPLACE_CONFIG.flipkart.dailyAdBudget +
+      MARKETPLACE_CONFIG.meesho.dailyAdBudget
+    );
   } else if (platform === 'amazon') {
     advertising = durationDays * MARKETPLACE_CONFIG.amazon.dailyAdBudget;
+  } else if (platform === 'meesho') {
+    advertising = durationDays * MARKETPLACE_CONFIG.meesho.dailyAdBudget;
   } else {
     advertising = durationDays * MARKETPLACE_CONFIG.flipkart.dailyAdBudget;
   }
@@ -490,6 +498,7 @@ export function getPlatformBreakdown(
 
   const az = calculateFinancialSummary(orders, start, end, 'amazon');
   const fk = calculateFinancialSummary(orders, start, end, 'flipkart');
+  const ms = calculateFinancialSummary(orders, start, end, 'meesho');
 
   return [
     {
@@ -511,6 +520,16 @@ export function getPlatformBreakdown(
       returns: fk.returnedOrderCount,
       profit: fk.netProfit,
       margin: fk.grossRevenue > 0 ? (fk.netProfit / fk.grossRevenue) * 100 : 0
+    },
+    {
+      platform: 'meesho',
+      revenue: ms.grossRevenue,
+      orders: ms.orderCount,
+      unitsSold: ms.unitsSold,
+      fees: ms.marketplaceFees,
+      returns: ms.returnedOrderCount,
+      profit: ms.netProfit,
+      margin: ms.grossRevenue > 0 ? (ms.netProfit / ms.grossRevenue) * 100 : 0
     }
   ];
 }
@@ -727,7 +746,7 @@ export function getRegionalDistribution(
 // -------------------------------------------------------------
 
 export interface MarketplaceSideBySideMetric {
-  marketplace: 'amazon' | 'flipkart';
+  marketplace: 'amazon' | 'flipkart' | 'meesho';
   displayName: string;
   grossRevenue: number;
   unitsSold: number;
@@ -743,9 +762,10 @@ export interface MarketplaceSideBySideMetric {
   profitMargin: number;
 }
 
-export interface DualMarketplaceComparison {
+export interface MarketplaceComparison {
   amazon: MarketplaceSideBySideMetric;
   flipkart: MarketplaceSideBySideMetric;
+  meesho: MarketplaceSideBySideMetric;
   blended: {
     grossRevenue: number;
     unitsSold: number;
@@ -758,20 +778,23 @@ export interface DualMarketplaceComparison {
   };
 }
 
+export type DualMarketplaceComparison = MarketplaceComparison;
+
 /**
- * Calculates a comprehensive side-by-side comparison between Amazon and Flipkart.
+ * Calculates a comprehensive side-by-side comparison across Amazon, Flipkart, and Meesho.
  */
 export function getMarketplaceComparison(
   orders: Order[],
   start: Date,
   end: Date
-): DualMarketplaceComparison {
+): MarketplaceComparison {
   const azSummary = calculateFinancialSummary(orders, start, end, 'amazon');
   const fkSummary = calculateFinancialSummary(orders, start, end, 'flipkart');
+  const msSummary = calculateFinancialSummary(orders, start, end, 'meesho');
   const blendedSummary = calculateFinancialSummary(orders, start, end, 'all');
 
   const toMetric = (
-    mkt: 'amazon' | 'flipkart',
+    mkt: 'amazon' | 'flipkart' | 'meesho',
     disp: string,
     s: FinancialSummary
   ): MarketplaceSideBySideMetric => ({
@@ -794,6 +817,7 @@ export function getMarketplaceComparison(
   return {
     amazon: toMetric('amazon', 'Amazon India', azSummary),
     flipkart: toMetric('flipkart', 'Flipkart', fkSummary),
+    meesho: toMetric('meesho', 'Meesho', msSummary),
     blended: {
       grossRevenue: blendedSummary.grossRevenue,
       unitsSold: blendedSummary.unitsSold,

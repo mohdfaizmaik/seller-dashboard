@@ -113,9 +113,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: 700,
-              background: '#fef2f2',
-              color: '#b91c1c',
-              border: '1px solid #fecaca',
+              background: 'rgba(239, 68, 68, 0.12)',
+              color: '#f87171',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.25rem'
@@ -133,9 +133,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: 700,
-              background: '#fff7ed',
-              color: '#c2410c',
-              border: '1px solid #fed7aa',
+              background: 'rgba(249, 115, 22, 0.12)',
+              color: '#fb923c',
+              border: '1px solid rgba(249, 115, 22, 0.3)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.25rem'
@@ -153,9 +153,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: 700,
-              background: '#fefce8',
-              color: '#a16207',
-              border: '1px solid #fef08a',
+              background: 'rgba(245, 158, 11, 0.12)',
+              color: '#fbbf24',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.25rem'
@@ -173,9 +173,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: 700,
-              background: '#f0fdf4',
-              color: '#15803d',
-              border: '1px solid #bbf7d0',
+              background: 'rgba(16, 185, 129, 0.12)',
+              color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.25rem'
@@ -193,9 +193,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: 700,
-              background: '#f5f3ff',
-              color: '#6d28d9',
-              border: '1px solid #ddd6fe',
+              background: 'rgba(139, 92, 246, 0.12)',
+              color: '#c4b5fd',
+              border: '1px solid rgba(139, 92, 246, 0.3)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.25rem'
@@ -213,9 +213,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: 700,
-              background: '#f1f5f9',
-              color: '#475569',
-              border: '1px solid #cbd5e1',
+              background: 'rgba(239, 68, 68, 0.12)',
+              color: '#f87171',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.25rem'
@@ -270,8 +270,8 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               fontSize: '0.8rem',
               fontWeight: 600,
               border: '1px solid',
-              borderColor: activeFilter === 'all' ? 'var(--color-primary, #2563eb)' : 'var(--border-color, #e2e8f0)',
-              background: activeFilter === 'all' ? 'var(--color-primary, #2563eb)' : 'transparent',
+              borderColor: activeFilter === 'all' ? 'var(--color-primary)' : 'var(--border-color)',
+              background: activeFilter === 'all' ? 'var(--color-primary)' : 'transparent',
               color: activeFilter === 'all' ? '#ffffff' : 'var(--text-secondary)',
               cursor: 'pointer'
             }}
@@ -288,9 +288,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               fontSize: '0.8rem',
               fontWeight: 600,
               border: '1px solid',
-              borderColor: activeFilter === 'reorder' ? '#f59e0b' : 'var(--border-color, #e2e8f0)',
-              background: activeFilter === 'reorder' ? '#fef3c7' : 'transparent',
-              color: activeFilter === 'reorder' ? '#92400e' : 'var(--text-secondary)',
+              borderColor: activeFilter === 'reorder' ? '#f59e0b' : 'var(--border-color)',
+              background: activeFilter === 'reorder' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+              color: activeFilter === 'reorder' ? '#fbbf24' : 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -306,9 +306,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               fontSize: '0.8rem',
               fontWeight: 600,
               border: '1px solid',
-              borderColor: activeFilter === 'stockout' ? '#ef4444' : 'var(--border-color, #e2e8f0)',
-              background: activeFilter === 'stockout' ? '#fee2e2' : 'transparent',
-              color: activeFilter === 'stockout' ? '#991b1b' : 'var(--text-secondary)',
+              borderColor: activeFilter === 'stockout' ? '#ef4444' : 'var(--border-color)',
+              background: activeFilter === 'stockout' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+              color: activeFilter === 'stockout' ? '#f87171' : 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -324,9 +324,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               fontSize: '0.8rem',
               fontWeight: 600,
               border: '1px solid',
-              borderColor: activeFilter === 'critical' ? '#f97316' : 'var(--border-color, #e2e8f0)',
-              background: activeFilter === 'critical' ? '#ffedd5' : 'transparent',
-              color: activeFilter === 'critical' ? '#9a3412' : 'var(--text-secondary)',
+              borderColor: activeFilter === 'critical' ? '#f97316' : 'var(--border-color)',
+              background: activeFilter === 'critical' ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+              color: activeFilter === 'critical' ? '#fb923c' : 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -342,9 +342,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               fontSize: '0.8rem',
               fontWeight: 600,
               border: '1px solid',
-              borderColor: activeFilter === 'healthy' ? '#10b981' : 'var(--border-color, #e2e8f0)',
-              background: activeFilter === 'healthy' ? '#d1fae5' : 'transparent',
-              color: activeFilter === 'healthy' ? '#065f46' : 'var(--text-secondary)',
+              borderColor: activeFilter === 'healthy' ? '#10b981' : 'var(--border-color)',
+              background: activeFilter === 'healthy' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+              color: activeFilter === 'healthy' ? '#34d399' : 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -360,9 +360,9 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               fontSize: '0.8rem',
               fontWeight: 600,
               border: '1px solid',
-              borderColor: activeFilter === 'overstock' ? '#8b5cf6' : 'var(--border-color, #e2e8f0)',
-              background: activeFilter === 'overstock' ? '#ede9fe' : 'transparent',
-              color: activeFilter === 'overstock' ? '#5b21b6' : 'var(--text-secondary)',
+              borderColor: activeFilter === 'overstock' ? '#8b5cf6' : 'var(--border-color)',
+              background: activeFilter === 'overstock' ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+              color: activeFilter === 'overstock' ? '#c4b5fd' : 'var(--text-secondary)',
               cursor: 'pointer'
             }}
           >
@@ -391,10 +391,11 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
               width: '100%',
               padding: '0.45rem 0.75rem 0.45rem 2.2rem',
               borderRadius: '8px',
-              border: '1px solid var(--border-color, #cbd5e1)',
+              border: '1px solid var(--border-color)',
               fontSize: '0.85rem',
               outline: 'none',
-              background: 'var(--bg-main, #ffffff)'
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-primary)'
             }}
           />
         </div>
@@ -404,7 +405,7 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
           <thead>
-            <tr style={{ background: 'var(--bg-secondary, #f8fafc)', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
+            <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
               <th style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 SKU & Product Name
               </th>
@@ -489,7 +490,7 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
                   <tr
                     key={item.sku}
                     style={{
-                      borderBottom: '1px solid var(--border-color, #e2e8f0)',
+                      borderBottom: '1px solid var(--border-color)',
                       transition: 'background-color 0.15s ease'
                     }}
                   >
@@ -544,7 +545,7 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
                         <span
                           style={{
                             fontWeight: 700,
-                            color: item.availableStock === 0 ? '#dc2626' : 'var(--text-primary)'
+                            color: item.availableStock === 0 ? '#f87171' : 'var(--text-primary)'
                           }}
                         >
                           {item.availableStock} avail
@@ -559,20 +560,20 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
                     <td style={{ padding: '0.85rem 1rem' }}>
                       <div style={{ fontWeight: 600 }}>
                         {item.doi >= 999 ? (
-                          <span style={{ color: '#64748b' }}>&gt;120 days</span>
+                          <span style={{ color: 'var(--text-muted)' }}>&gt;120 days</span>
                         ) : item.doi === 0 ? (
-                          <span style={{ color: '#dc2626' }}>0 days</span>
+                          <span style={{ color: '#f87171' }}>0 days</span>
                         ) : (
                           <span
                             style={{
                               color:
                                 item.doi <= item.leadTimeDays
-                                  ? '#dc2626'
+                                  ? '#f87171'
                                   : item.doi <= (item.leadTimeDays + item.safetyStockDays)
-                                  ? '#d97706'
+                                  ? '#fbbf24'
                                   : item.doi <= 60
-                                  ? '#16a34a'
-                                  : '#7c3aed'
+                                  ? '#34d399'
+                                  : '#c4b5fd'
                             }}
                           >
                             {item.doi.toFixed(1)} days
@@ -594,7 +595,7 @@ export const RestockRecommendationTable: React.FC<RestockRecommendationTableProp
                     {/* Restock Units */}
                     <td style={{ padding: '0.85rem 1rem' }}>
                       {item.recommendedReorderQty > 0 ? (
-                        <span style={{ fontWeight: 700, color: 'var(--color-primary, #2563eb)' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>
                           +{item.recommendedReorderQty} units
                         </span>
                       ) : (

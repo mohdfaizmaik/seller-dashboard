@@ -24,6 +24,8 @@ import { useSkuCosts } from '../hooks/useSkuCosts';
 import { useInventory } from '../hooks/useInventory';
 import { generateRecommendations } from '../services/recommendations/recommendationEngine';
 import { RecommendationsCard } from '../components/recommendations/RecommendationsCard';
+import { ExecutiveSummaryCard } from '../components/ai/ExecutiveSummaryCard';
+import { useCopilot } from '../context/CopilotContext';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -39,6 +41,7 @@ export const Overview: React.FC = () => {
   const { orders, hasImportedData, useMockFallback, setUseMockFallback, batches } = useSellerData();
   const { skuCostsMap } = useSkuCosts();
   const { inventory } = useInventory();
+  const { openCopilot } = useCopilot();
 
   // Retrieve calculated metrics from the analytics service using active dataset
   const kpis = getOverviewMetrics(platform, preset, startDate, endDate, orders);
@@ -108,10 +111,12 @@ export const Overview: React.FC = () => {
   };
   const amazonShareData = platformShares.find(p => p.platform === 'amazon') || emptyPlatform;
   const flipkartShareData = platformShares.find(p => p.platform === 'flipkart') || emptyPlatform;
-  const totalSharesRevenue = amazonShareData.revenue + flipkartShareData.revenue;
+  const meeshoShareData = platformShares.find(p => p.platform === 'meesho') || emptyPlatform;
+  const totalSharesRevenue = amazonShareData.revenue + flipkartShareData.revenue + meeshoShareData.revenue;
 
   const amazonPercentage = totalSharesRevenue > 0 ? (amazonShareData.revenue / totalSharesRevenue) * 100 : 0;
   const flipkartPercentage = totalSharesRevenue > 0 ? (flipkartShareData.revenue / totalSharesRevenue) * 100 : 0;
+  const meeshoPercentage = totalSharesRevenue > 0 ? (meeshoShareData.revenue / totalSharesRevenue) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -220,6 +225,18 @@ export const Overview: React.FC = () => {
           </CardBody>
         </Card>
       </div>
+
+      {/* Executive Brief & AI Store Narrative – Phase 9D */}
+      <ExecutiveSummaryCard
+        orders={orders}
+        inventory={inventory}
+        skuCostsMap={skuCostsMap}
+        preset={preset}
+        platform={platform}
+        startDate={startDate}
+        endDate={endDate}
+        onOpenCopilot={openCopilot}
+      />
 
       {/* Seller Recommendations & Tactical Insights – Phase 6F */}
       <RecommendationsCard recommendations={recommendations} />
@@ -448,6 +465,68 @@ export const Overview: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Meesho */}
+                {(meeshoShareData.orders > 0 || platform === 'meesho') && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium">Meesho</span>
+                      <span className="font-semibold" style={{ color: 'var(--color-meesho)' }}>
+                        {meeshoPercentage.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div style={{ height: '8px', width: '100%', backgroundColor: 'var(--border-color)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${meeshoPercentage}%`, backgroundColor: 'var(--color-meesho)' }} />
+                    </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '6px 12px',
+                        fontSize: '12px'
+                      }}
+                    >
+                      <div className="flex justify-between gap-2">
+                        <span style={{ color: 'var(--text-secondary)' }}>Revenue</span>
+                        <span className="font-medium">{formatINR(meeshoShareData.revenue)}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span style={{ color: 'var(--text-secondary)' }}>Orders</span>
+                        <span className="font-medium">{meeshoShareData.orders.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span style={{ color: 'var(--text-secondary)' }}>Units Sold</span>
+                        <span className="font-medium">{meeshoShareData.unitsSold.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span style={{ color: 'var(--text-secondary)' }}>Marketplace Fees</span>
+                        <span className="font-medium">{formatINR(meeshoShareData.fees)}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span style={{ color: 'var(--text-secondary)' }}>Returns</span>
+                        <span className="font-medium">{meeshoShareData.returns.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span style={{ color: 'var(--text-secondary)' }}>Net Profit</span>
+                        <span
+                          className="font-medium"
+                          style={{ color: meeshoShareData.profit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}
+                        >
+                          {formatINR(meeshoShareData.profit)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-2" style={{ gridColumn: '1 / -1' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Profit Margin</span>
+                        <span
+                          className="font-medium"
+                          style={{ color: meeshoShareData.margin >= 0 ? 'var(--text-primary)' : 'var(--color-danger)' }}
+                        >
+                          {meeshoShareData.margin.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardBody>

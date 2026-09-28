@@ -38,7 +38,7 @@ export interface DailySalesMetric {
 }
 
 export interface PlatformBreakdown {
-  platform: 'amazon' | 'flipkart';
+  platform: 'amazon' | 'flipkart' | 'meesho';
   revenue: number;
   orders: number;
   unitsSold: number;

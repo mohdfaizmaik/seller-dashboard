@@ -37,6 +37,13 @@ export const MARKETPLACE_CONFIG = {
     dailyAdBudget: 300         // ₹300/day ad spend
   } as PlatformConfig,
 
+  meesho: {
+    referralFeeRate: 0.00,     // 0% referral fee (Zero commission marketplace)
+    fixedClosingFee: 0,        // ₹0 fixed closing fee
+    flatShippingRate: 45,      // ₹45 flat seller shipping deduction
+    dailyAdBudget: 200         // ₹200/day ad spend
+  } as PlatformConfig,
+
   returns: {
     flatReturnShipping: 80,    // ₹80 reverse shipping
     reverseProcessingFee: 30,  // ₹30 return processing

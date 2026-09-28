@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
-export type PlatformFilter = 'all' | 'amazon' | 'flipkart';
+export type PlatformFilter = 'all' | 'amazon' | 'flipkart' | 'meesho';
 export type DatePresetFilter = 'today' | '7d' | '30d' | 'ytd' | 'custom';
 
 export interface DashboardFilters {
@@ -15,7 +15,7 @@ export function useFilters() {
 
   // Parse platform parameter
   const platformStr = searchParams.get('platform');
-  const platform: PlatformFilter = (platformStr === 'amazon' || platformStr === 'flipkart')
+  const platform: PlatformFilter = (platformStr === 'amazon' || platformStr === 'flipkart' || platformStr === 'meesho')
     ? platformStr
     : 'all';
 

@@ -8,6 +8,7 @@ import type {
 import { detectMarketplace, stripBOM } from './detectMarketplace';
 import { normalizeAmazonMTR } from './normalizers/amazonMTRNormalizer';
 import { normalizeFlipkartSales } from './normalizers/flipkartNormalizer';
+import { normalizeMeeshoOrders } from './normalizers/meeshoNormalizer';
 
 /**
  * Parses a single line respecting quotation marks and escaped quotes ("").
@@ -191,7 +192,7 @@ export function parseReportSync(
   if (detection.marketplace === 'unknown') {
     errors.push({
       message:
-        'Unable to detect marketplace format. Expected Amazon MTR (Seller Gstin, Invoice Number, Transaction Type, Asin) or Flipkart Sales (FSN, Order Item ID, Event Type, Fulfilment Type) signature headers.',
+        'Unable to detect marketplace format. Expected Amazon MTR (Seller Gstin, Invoice Number, Transaction Type, Asin), Flipkart Sales (FSN, Order Item ID, Event Type, Fulfilment Type), or Meesho Orders (Sub Order No, SKU, Product Title) signature headers.',
       severity: 'error'
     });
 
@@ -220,8 +221,13 @@ export function parseReportSync(
     normalizedOrders = normResult.orders;
     errors.push(...normResult.errors);
     warnings.push(...normResult.warnings);
+  } else if (detection.reportType === 'meesho_orders') {
+    const normResult = normalizeMeeshoOrders(rows);
+    normalizedOrders = normResult.orders;
+    errors.push(...normResult.errors);
+    warnings.push(...normResult.warnings);
   } else {
-    // Extensible for future report types (e.g. Meesho, etc.)
+    // Extensible for future report types
     errors.push({
       message: `Report type "${detection.reportType}" does not currently have an order normalizer implemented.`,
       severity: 'error'

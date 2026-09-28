@@ -29,6 +29,49 @@ import {
   Legend
 } from 'recharts';
 
+interface RegionalTooltipPayloadItem {
+  payload: {
+    region: string;
+    revenue: number;
+    percentage: number;
+    orderCount: number;
+  };
+}
+
+const RegionalTooltip: React.FC<{
+  active?: boolean;
+  payload?: RegionalTooltipPayloadItem[];
+}> = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0].payload;
+  return (
+    <div
+      style={{
+        backgroundColor: 'var(--bg-surface)',
+        border: '1px solid var(--border-color-focus)',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)',
+        padding: '10px 14px',
+        minWidth: '160px'
+      }}
+    >
+      <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '13px', marginBottom: '6px' }}>
+        {data.region} Zone
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Revenue:</span>
+        <span style={{ color: '#818cf8', fontWeight: 600, fontSize: '12px' }}>{formatINR(data.revenue)}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Share:</span>
+        <span style={{ color: 'var(--text-primary)', fontWeight: 500, fontSize: '11px' }}>
+          {data.percentage}% ({data.orderCount} orders)
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const Sales: React.FC = () => {
   const { preset, startDate, endDate } = useFilters();
   const { orders } = useSellerData();
@@ -215,9 +258,17 @@ export const Sales: React.FC = () => {
                       : ''
                   }
                   contentStyle={{
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-md)'
+                    backgroundColor: 'var(--bg-surface)',
+                    border: '1px solid var(--border-color-focus)',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--text-primary)',
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                    fontSize: '12px'
+                  }}
+                  labelStyle={{
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    marginBottom: '4px'
                   }}
                 />
                 <Legend />
@@ -265,12 +316,8 @@ export const Sales: React.FC = () => {
                   tickFormatter={(val: number) => `₹${(val / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
-                  formatter={(val: unknown) => [formatINR(Number(val) || 0), 'Revenue']}
-                  contentStyle={{
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: 'var(--radius-md)'
-                  }}
+                  cursor={{ fill: 'rgba(99, 102, 241, 0.08)', radius: 4 }}
+                  content={<RegionalTooltip />}
                 />
                 <Bar dataKey="revenue" name="Revenue" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
               </BarChart>

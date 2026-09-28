@@ -7,6 +7,10 @@
   /* Color Palette - Modern Dark Slate Theme */
   --bg-app: #090d16;          /* Deep dark slate background */
   --bg-surface: #111827;      /* Solid dark gray card background */
+  --bg-card: #111827;         /* Card background alias */
+  --bg-main: #111827;         /* Main surface background alias */
+  --bg-secondary: #161f30;    /* Secondary surface background */
+  --bg-hover: #1f2937;        /* Hover background */
   --bg-surface-hover: #1f2937;/* Hover state for cards/items */
   --border-color: #1f2937;    /* Subtle dark border */
   --border-color-focus: #374151;
@@ -38,6 +42,8 @@
   --color-amazon-light: rgba(255, 153, 0, 0.1);
   --color-flipkart: #2874f0;   /* Flipkart Blue */
   --color-flipkart-light: rgba(40, 116, 240, 0.1);
+  --color-meesho: #f43397;     /* Meesho Fuchsia / Magenta */
+  --color-meesho-light: rgba(244, 51, 151, 0.12);
   
   /* Spacing */
   --spacing-xs: 0.25rem;       /* 4px */
@@ -453,6 +459,11 @@ p {
 .badge-flipkart {
   background-color: var(--color-flipkart-light);
   color: var(--color-flipkart);
+}
+
+.badge-meesho {
+  background-color: var(--color-meesho-light);
+  color: var(--color-meesho);
 }
 
 /* Sidebar Styles */

@@ -7,6 +7,7 @@ export type ReportFormat =
   | 'amazon_business_report'
   | 'flipkart_sales'
   | 'flipkart_sales_report'
+  | 'meesho_orders'
   | 'unknown'
   | string;
 

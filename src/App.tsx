@@ -7,11 +7,18 @@ import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
 import { Profit } from './pages/Profit';
 import { Inventory } from './pages/Inventory';
+import { TaxCompliance } from './pages/TaxCompliance';
+import { Advertising } from './pages/Advertising';
+import { Returns } from './pages/Returns';
+import { CashFlow } from './pages/CashFlow';
+
+import { CopilotProvider } from './context/CopilotContext';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <CopilotProvider>
+      <BrowserRouter>
+        <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Overview />} />
           <Route path="marketplace" element={<Marketplace />} />
@@ -20,12 +27,17 @@ function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="profit" element={<Profit />} />
           <Route path="inventory" element={<Inventory />} />
+          <Route path="tax" element={<TaxCompliance />} />
+          <Route path="advertising" element={<Advertising />} />
+          <Route path="returns" element={<Returns />} />
+          <Route path="cashflow" element={<CashFlow />} />
           <Route path="comparison" element={<Marketplace />} />
           {/* Wildcard redirect to overview page */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </CopilotProvider>
   );
 }
 

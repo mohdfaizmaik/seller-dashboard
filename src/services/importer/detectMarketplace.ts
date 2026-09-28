@@ -96,6 +96,30 @@ const SIGNATURES: SignatureDef[] = [
       'customer s delivery state',
       'is shopsy order'
     ]
+  },
+  {
+    marketplace: 'meesho',
+    reportType: 'meesho_orders',
+    requiredHeaders: [
+      'sub order no',
+      'sku'
+    ],
+    supplementalHeaders: [
+      'product name',
+      'product title',
+      'order date',
+      'quantity',
+      'supplier discounted price',
+      'product price',
+      'customer state',
+      'payment mode',
+      'payment method',
+      'status',
+      'order status',
+      'return type',
+      'awb no',
+      'courier partner'
+    ]
   }
 ];
 

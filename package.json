@@ -18,7 +18,13 @@
     "test:storage": "tsx server/validation/testStorageValidation.ts",
     "test:phase6ef": "tsx server/validation/testPhase6EFValidation.ts",
     "test:profit": "tsx server/validation/testProfitValidation.ts",
-    "test:inventory": "tsx server/validation/testInventoryValidation.ts"
+    "test:inventory": "tsx server/validation/testInventoryValidation.ts",
+    "test:copilot": "tsx server/validation/testCopilotValidation.ts",
+    "test:meesho": "tsx server/validation/testMeeshoValidation.ts",
+    "test:tax": "tsx server/validation/testTaxValidation.ts",
+    "test:advertising": "tsx server/validation/testAdvertisingValidation.ts",
+    "test:returns": "tsx server/validation/testReturnsValidation.ts",
+    "test:cashflow": "tsx server/validation/testCashFlowValidation.ts"
   },
   "dependencies": {
     "lucide-react": "^1.31.0",
